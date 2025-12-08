@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "923914389386",
+    "project_id": "smartcampusalertsystem",
+    "storage_bucket": "smartcampusalertsystem.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:923914389386:android:a9b98a89d253b259cd6a73",
+        "android_client_info": {
+          "package_name": "com.example.smart_campus_alert_system"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAr6TBM_cJTLpAn4k8imxNFIwE-WGHFmfA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

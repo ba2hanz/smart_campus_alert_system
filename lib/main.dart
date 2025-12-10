@@ -1,23 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart'; // FlutterFire configure ile gelen dosya
 
-// Senin oluşturduğun ekranlar
-import 'screens/map/map_screen.dart';
-import 'screens/create_incident_screen.dart';
-import 'screens/map/location_picker_screen.dart';
-
+// --- YENİ EKLENEN EKRANLAR ---
+// Dosya yollarının (klasör isimlerinin) senin projenle aynı olduğundan emin ol
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/detail/incident_detail_screen.dart';
-// import 'screens/detail/incident_detail_screen.dart'; // Eğer bu dosyan varsa yorum satırını kaldır
+
+// Harita ve yeni bildirim ekranları
+import 'screens/map/map_screen.dart';
+import 'screens/create_incident_screen.dart';
 
 void main() async {
-  // 1. Flutter motorunu başlat
   WidgetsFlutterBinding.ensureInitialized();
   
-  // 2. Firebase'i başlat (Platforma uygun ayarlarla)
+  // Firebase'i başlat
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
@@ -26,74 +26,65 @@ void main() async {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Akıllı Kampüs',
-      debugShowCheckedModeBanner: false, // Sağ üstteki "Debug" bandını kaldırır
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primarySwatch: Colors.blue,
         useMaterial3: true,
+        // Görsel güzellik için genel tema ayarları
+        appBarTheme: AppBarTheme(
+          centerTitle: true,
+          backgroundColor: Colors.blueAccent,
+          foregroundColor: Colors.white,
+        ),
       ),
       
-      // NORMALDE BURASI: home: LoginScreen() OLACAKTI.
-      // AMA ŞU AN TEST İÇİN GEÇİCİ MENÜ AÇIYORUZ:
-      home: TestMenuScreen(), 
+      // --- ANA GİRİŞ KAPISI (AuthWrapper) ---
+      // Uygulama açılınca "Kullanıcı içeride mi?" kontrolü yapar.
+      home: AuthWrapper(), 
 
-      // Sayfa Rotaları (Navigasyon İsimleri)
+      // --- ROTALAR ---
+      // Sayfalar arası geçişlerde kullanılan isimler
       routes: {
+        '/login': (context) => LoginScreen(),
+        '/register': (context) => RegisterScreen(),
+        '/home': (context) => HomeScreen(),
+        '/detail': (context) => IncidentDetailScreen(),
         '/map': (context) => MapScreen(),
         '/createIncident': (context) => CreateIncidentScreen(),
-        '/locationPicker' : (context) => LocationPickerScreen(),
-        // '/detail': (context) => IncidentDetailScreen(), // Dosyan varsa aç
       },
     );
   }
 }
 
-// ---------------------------------------------------------
-// GEÇİCİ TEST MENÜSÜ (Giriş Ekranı yapılana kadar bunu kullan)
-// ---------------------------------------------------------
-class TestMenuScreen extends StatelessWidget {
-  const TestMenuScreen({super.key});
-
+// -----------------------------------------------------------
+// OTURUM KONTROLCÜSÜ (AuthWrapper)
+// Kullanıcıyı durumuna göre Login veya Home sayfasına atar.
+// -----------------------------------------------------------
+class AuthWrapper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text("Test Menüsü (Role 2)")),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text("Harita ve Medya Modülü Testi", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            SizedBox(height: 20),
-            
-            // 1. Harita Ekranına Git
-            ElevatedButton.icon(
-              icon: Icon(Icons.map),
-              label: Text("Harita Ekranına Git"),
-              style: ElevatedButton.styleFrom(padding: EdgeInsets.all(20)),
-              onPressed: () {
-                Navigator.pushNamed(context, '/map');
-              },
-            ),
-            
-            SizedBox(height: 10),
+    return StreamBuilder<User?>(
+      // Firebase'in oturum durumunu canlı dinle
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        
+        // 1. Bağlantı bekleniyorsa (Yükleniyor...)
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Scaffold(body: Center(child: CircularProgressIndicator()));
+        }
 
-            // 2. Yeni Bildirim Oluştur Ekranına Git
-            ElevatedButton.icon(
-              icon: Icon(Icons.add_a_photo),
-              label: Text("Yeni Bildirim Oluştur"),
-              style: ElevatedButton.styleFrom(padding: EdgeInsets.all(20), backgroundColor: Colors.orange[100]),
-              onPressed: () {
-                Navigator.pushNamed(context, '/createIncident');
-              },
-            ),
-          ],
-        ),
-      ),
+        // 2. Kullanıcı Giriş Yapmışsa -> Ana Sayfaya Gönder
+        if (snapshot.hasData) {
+          return HomeScreen(); 
+        }
+
+        // 3. Kullanıcı Yoksa -> Giriş Ekranına Gönder
+        return LoginScreen();
+      },
     );
   }
 }

@@ -31,20 +31,20 @@ dependencies:
   flutter:
     sdk: flutter
   # Firebase Temel Paketleri
-  firebase_core: ^2.24.2
-  firebase_auth: ^4.16.0
-  cloud_firestore: ^4.14.0
-  firebase_storage: ^11.6.0
+  firebase_core: ^4.2.1
+  firebase_auth: ^6.1.2
+  cloud_firestore: ^6.1.0
+  firebase_storage: ^13.0.4
   
   # Harita ve Konum
   google_maps_flutter: ^2.5.3
-  geolocator: ^10.1.0
+  geolocator: ^14.0.2
   
   # Resim Seçme
   image_picker: ^1.0.7
   
   # Tarih Formatlama (İsteğe bağlı ama önerilir)
-  intl: ^0.19.0
+  intl: ^0.20.2
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.

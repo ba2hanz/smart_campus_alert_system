@@ -6,22 +6,25 @@
     "configurations": [
         {
             "name": "smart_campus_alert_system",
-            "cwd": "smart_campus_alert_system",
+            "cwd": "${workspaceFolder}",
             "request": "launch",
-            "type": "dart"
+            "type": "dart",
+            "program": "lib/main.dart"
         },
         {
             "name": "smart_campus_alert_system (profile mode)",
-            "cwd": "smart_campus_alert_system",
+            "cwd": "${workspaceFolder}",
             "request": "launch",
             "type": "dart",
+            "program": "lib/main.dart",
             "flutterMode": "profile"
         },
         {
             "name": "smart_campus_alert_system (release mode)",
-            "cwd": "smart_campus_alert_system",
+            "cwd": "${workspaceFolder}",
             "request": "launch",
             "type": "dart",
+            "program": "lib/main.dart",
             "flutterMode": "release"
         }
     ]

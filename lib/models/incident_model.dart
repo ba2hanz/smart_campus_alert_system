@@ -10,6 +10,7 @@ class Incident {
   final double longitude;
   final String? imageUrl;
   final DateTime createdAt;
+  final String userId;
 
   Incident({
     required this.id,
@@ -21,6 +22,7 @@ class Incident {
     required this.longitude,
     this.imageUrl,
     required this.createdAt,
+    required this.userId,
   });
 
   factory Incident.fromMap(Map<String, dynamic> map, String docId) {
@@ -35,6 +37,7 @@ class Incident {
       imageUrl: map['imageUrl'],
       // Firestore Timestamp'ini DateTime'a çevirme:
       createdAt: (map['createdAt'] as Timestamp).toDate(),
+      userId: map['userId'] ?? '',
     );
   }
 
@@ -48,6 +51,7 @@ class Incident {
       'longitude': longitude,
       'imageUrl': imageUrl,
       'createdAt': Timestamp.fromDate(createdAt),
+      'userId': userId,
     };
   }
 }

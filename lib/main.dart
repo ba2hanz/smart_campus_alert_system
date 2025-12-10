@@ -6,6 +6,11 @@ import 'firebase_options.dart'; // FlutterFire configure ile gelen dosya
 import 'screens/map/map_screen.dart';
 import 'screens/create_incident_screen.dart';
 import 'screens/map/location_picker_screen.dart';
+
+import 'screens/auth/login_screen.dart';
+import 'screens/auth/register_screen.dart';
+import 'screens/home/home_screen.dart';
+import 'screens/detail/incident_detail_screen.dart';
 // import 'screens/detail/incident_detail_screen.dart'; // Eğer bu dosyan varsa yorum satırını kaldır
 
 void main() async {

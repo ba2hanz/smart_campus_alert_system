@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-//import '../../models/incident_model.dart';
-import 'package:smart_campus_alert_system/models/incident_model.dart';
+import '../../models/incident_model.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -38,6 +37,13 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: Text("Kampüs Bildirimleri"),
         actions: [
+          IconButton(
+            icon: Icon(Icons.map), 
+            tooltip: "Haritada Gör",
+            onPressed: () {
+              Navigator.pushNamed(context, '/map'); 
+            },
+          ),
           IconButton(
             icon: Icon(Icons.exit_to_app), 
             onPressed: () async {
@@ -111,8 +117,9 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         child: Icon(Icons.add),
+        tooltip: "Yeni Bildirim Oluştur",
         onPressed: () {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Olay ekleme sayfasını 2. kişi yapacak!")));
+          Navigator.pushNamed(context, '/createIncident');
         },
       ),
     );

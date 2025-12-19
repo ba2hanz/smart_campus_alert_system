@@ -81,6 +81,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 
                 var docs = snapshot.data!.docs.where((doc) {
                   var data = doc.data() as Map<String, dynamic>;
+
+                  if (data['status'] == 'İnceleniyor') return false;
+
                   bool matchesSearch = data['title'].toString().toLowerCase().contains(_searchQuery);
                   bool matchesFilter = true;
                   

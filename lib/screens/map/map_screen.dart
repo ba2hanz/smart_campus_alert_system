@@ -72,8 +72,8 @@ class _MapScreenState extends State<MapScreen> {
       
       if (_isAdmin && _colorByStatus) {
         // MOD 1: DURUMA GÖRE RENKLENDİRME (Sadece Admin Görebilir)
-        if (incident.status == 'Inceleniyor') markerHue = BitmapDescriptor.hueYellow; // Çok dikkat çeksin
-        else if (incident.status == 'Cozuldu') markerHue = BitmapDescriptor.hueGreen;
+        if (incident.status == 'İnceleniyor') markerHue = BitmapDescriptor.hueOrange; // Çok dikkat çeksin
+        else if (incident.status == 'Çözüldü') markerHue = BitmapDescriptor.hueGreen;
         else markerHue = BitmapDescriptor.hueRed; // Açık
       } else {
         // MOD 2: TÜRE GÖRE RENKLENDİRME (Varsayılan)
@@ -174,8 +174,8 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Color _getStatusColor(String status) {
-    if (status == 'Inceleniyor') return Colors.orange;
-    if (status == 'Cozuldu') return Colors.green;
+    if (status == 'İnceleniyor') return Colors.orange;
+    if (status == 'Çözüldü') return Colors.green;
     return Colors.red;
   }
 
@@ -186,8 +186,8 @@ class _MapScreenState extends State<MapScreen> {
       builder: (ctx) => AlertDialog(
         title: Text("Durumu Güncelle"),
         content: DropdownButtonFormField<String>(
-           value: ["Acik", "Inceleniyor", "Cozuldu"].contains(selectedStatus) ? selectedStatus : "Inceleniyor",
-           items: ["Inceleniyor", "Acik", "Cozuldu"].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+           value: ["Açık", "İnceleniyor", "Çözüldü"].contains(selectedStatus) ? selectedStatus : "İnceleniyor",
+           items: ["İnceleniyor", "Açık", "Çözüldü"].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
            onChanged: (val) => selectedStatus = val!,
         ),
         actions: [

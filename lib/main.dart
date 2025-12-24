@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'firebase_options.dart'; // FlutterFire configure ile gelen dosya
 
 // --- YENİ EKLENEN EKRANLAR ---
@@ -9,7 +10,7 @@ import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/detail/incident_detail_screen.dart';
-
+import 'screens/admin/admin_home_screen.dart';
 // Harita ve yeni bildirim ekranları
 import 'screens/map/map_screen.dart';
 import 'screens/create_incident_screen.dart';
@@ -55,6 +56,7 @@ class MyApp extends StatelessWidget {
         '/detail': (context) => IncidentDetailScreen(),
         '/map': (context) => MapScreen(),
         '/createIncident': (context) => CreateIncidentScreen(),
+        '/adminHome': (context) => AdminHomeScreen(),
       },
     );
   }
@@ -79,11 +81,47 @@ class AuthWrapper extends StatelessWidget {
 
         // 2. Kullanıcı Giriş Yapmışsa -> Ana Sayfaya Gönder
         if (snapshot.hasData) {
-          return HomeScreen(); 
+          return RoleCheckWrapper(); 
         }
 
         // 3. Kullanıcı Yoksa -> Giriş Ekranına Gönder
         return LoginScreen();
+      },
+    );
+  }
+}
+class RoleCheckWrapper extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    User? user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) return LoginScreen();
+
+    // Firestore'a git ve bu kullanıcının "role" bilgisini oku
+    return FutureBuilder<DocumentSnapshot>(
+      future: FirebaseFirestore.instance.collection('users').doc(user.uid).get(),
+      builder: (context, snapshot) {
+        
+        // Veri okunurken dönen tekerlek göster
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Scaffold(body: Center(child: CircularProgressIndicator()));
+        }
+
+        // Veri geldiyse kontrol et
+        if (snapshot.hasData && snapshot.data!.exists) {
+          var userData = snapshot.data!.data() as Map<String, dynamic>;
+          // Varsayılan rol 'user' olsun, eğer veritabanında 'admin' yazıyorsa onu al
+          String role = userData['role'] ?? 'user';
+
+          if (role == 'admin') {
+            return AdminHomeScreen(); // ADMİN İSE BURAYA
+          } else {
+            return HomeScreen();      // ÖĞRENCİ İSE BURAYA
+          }
+        }
+
+        // Veri okunamazsa veya hata olursa güvenli olarak ana sayfaya at
+        return HomeScreen();
       },
     );
   }

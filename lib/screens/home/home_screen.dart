@@ -4,6 +4,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/incident_model.dart';
 
 class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
   @override
   _HomeScreenState createState() => _HomeScreenState();
 }
@@ -12,11 +14,30 @@ class _HomeScreenState extends State<HomeScreen> {
   String _filter = "Tümü";
   String _searchQuery = "";
   List<String> _followedIds = [];
+  bool _isAdmin = false; // Admin mi kontrolü için
 
   @override
   void initState() {
     super.initState();
     _getFollowedIncidents();
+    _checkIfAdmin(); // Rol kontrolü
+  }
+
+  // Kullanıcı Admin mi diye bakar
+  void _checkIfAdmin() async {
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      var doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      if (doc.exists && doc.data() != null) {
+        if (doc.data()!['role'] == 'admin') {
+          if (mounted) {
+            setState(() {
+              _isAdmin = true;
+            });
+          }
+        }
+      }
+    }
   }
 
   void _getFollowedIncidents() async {
@@ -37,31 +58,40 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: Text("Kampüs Bildirimleri"),
         actions: [
+          // HARİTA BUTONU
           IconButton(
-            icon: Icon(Icons.map), 
+            icon: Icon(Icons.map),
             tooltip: "Haritada Gör",
             onPressed: () {
-              Navigator.pushNamed(context, '/map'); 
+              Navigator.pushNamed(context, '/map');
             },
           ),
+          // PROFİL BUTONU 
           IconButton(
-            icon: Icon(Icons.exit_to_app), 
-            onPressed: () async {
-              await FirebaseAuth.instance.signOut();
-              Navigator.pushReplacementNamed(context, '/login');
-            }
+            icon: Icon(Icons.person),
+            tooltip: "Profil ve Ayarlar",
+            onPressed: () {
+              Navigator.pushNamed(context, '/profile');
+            },
           ),
         ],
       ),
       body: Column(
         children: [
+          // ARAMA
           Padding(
             padding: EdgeInsets.all(8.0),
             child: TextField(
-              decoration: InputDecoration(hintText: "Ara...", prefixIcon: Icon(Icons.search), border: OutlineInputBorder()),
+              decoration: InputDecoration(
+                  hintText: "Bildirim ara...",
+                  prefixIcon: Icon(Icons.search),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
+                  contentPadding: EdgeInsets.symmetric(vertical: 0, horizontal: 10)),
               onChanged: (val) => setState(() => _searchQuery = val.toLowerCase()),
             ),
           ),
+          
+          // FİLTRELER
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: ["Tümü", "Acik", "Takip"].map((f) => Padding(
@@ -69,25 +99,30 @@ class _HomeScreenState extends State<HomeScreen> {
               child: ChoiceChip(
                 label: Text(f == "Acik" ? "Sadece Açık" : (f == "Takip" ? "Takip Ettiklerim" : "Tümü")),
                 selected: _filter == f,
+                selectedColor: Colors.blueAccent.withOpacity(0.2),
                 onSelected: (val) => setState(() => _filter = f),
               ),
             )).toList(),
           ),
+
+          // LİSTE
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance.collection('incidents').orderBy('createdAt', descending: true).snapshots(),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) return Center(child: CircularProgressIndicator());
-                
+
                 var docs = snapshot.data!.docs.where((doc) {
                   var data = doc.data() as Map<String, dynamic>;
+                  String status = data['status'] ?? '';
 
-                  if (data['status'] == 'İnceleniyor') return false;
+                  // İnceleniyor olanlar asla görünmesin
+                  if (status == 'İnceleniyor' || status == 'Inceleniyor') return false;
 
                   bool matchesSearch = data['title'].toString().toLowerCase().contains(_searchQuery);
                   bool matchesFilter = true;
-                  
-                  if (_filter == "Acik") matchesFilter = data['status'] == "Acik";
+
+                  if (_filter == "Acik") matchesFilter = status == "Acik" || status == "Açık";
                   if (_filter == "Takip") matchesFilter = _followedIds.contains(doc.id);
 
                   return matchesSearch && matchesFilter;
@@ -98,16 +133,22 @@ class _HomeScreenState extends State<HomeScreen> {
                 return ListView.builder(
                   itemCount: docs.length,
                   itemBuilder: (context, index) {
-                    var incident = Incident.fromMap(docs[index].data() as Map<String, dynamic>, docs[index].id);
+                    var data = docs[index].data() as Map<String, dynamic>;
+                    var incident = Incident.fromMap(data, docs[index].id);
+                    
                     return Card(
                       margin: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       child: ListTile(
-                        leading: Icon(Icons.info, color: Colors.blue),
+                        leading: CircleAvatar(
+                          backgroundColor: incident.status == 'Çözüldü' || incident.status == 'Cozuldu' ? Colors.green : Colors.red,
+                          child: Icon(Icons.info_outline, color: Colors.white),
+                        ),
                         title: Text(incident.title, style: TextStyle(fontWeight: FontWeight.bold)),
                         subtitle: Text("${incident.type} - ${incident.status}"),
                         trailing: Icon(Icons.arrow_forward_ios, size: 16),
                         onTap: () {
-                          Navigator.pushNamed(context, '/detail', arguments: incident).then((_) => _getFollowedIncidents()); 
+                          // Detay sayfasına gidip gelince takip listesini güncelle
+                          Navigator.pushNamed(context, '/detail', arguments: incident).then((_) => _getFollowedIncidents());
                         },
                       ),
                     );
@@ -118,13 +159,47 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        child: Icon(Icons.add),
-        tooltip: "Yeni Bildirim Oluştur",
-        onPressed: () {
-          Navigator.pushNamed(context, '/createIncident');
-        },
-      ),
+      
+      // --- DİNAMİK BUTON ---
+      floatingActionButton: _isAdmin
+          ? Row(
+              mainAxisAlignment: MainAxisAlignment.end, 
+              children: [
+                //ADMİNE DÖN (Sadece Admin görür)
+                Padding(
+                  padding: const EdgeInsets.only(left: 30.0), 
+                  child: FloatingActionButton.extended(
+                    heroTag: "btnAdminReturn", // Çakışmayı önlemek için özel etiket
+                    onPressed: () {
+                      Navigator.pop(context); // Admin paneline geri dön
+                    },
+                    backgroundColor: Colors.redAccent,
+                    icon: Icon(Icons.admin_panel_settings, color: Colors.white),
+                    label: Text("ADMİNE DÖN", style: TextStyle(color: Colors.white)),
+                  ),
+                ),
+                
+                SizedBox(width: 10), 
+
+                FloatingActionButton(
+                  heroTag: "btnAddIncident", // Çakışmayı önlemek için özel etiket
+                  child: Icon(Icons.add),
+                  tooltip: "Yeni Bildirim Oluştur",
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/createIncident');
+                  },
+                ),
+              ],
+            )
+          : FloatingActionButton(
+              // NORMAL ÖĞRENCİ SADECE BUNU GÖRÜR
+              heroTag: "btnStudentAdd",
+              child: Icon(Icons.add),
+              tooltip: "Yeni Bildirim Oluştur",
+              onPressed: () {
+                Navigator.pushNamed(context, '/createIncident');
+              },
+            ),
     );
   }
 }

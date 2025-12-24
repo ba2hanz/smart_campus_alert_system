@@ -29,17 +29,25 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (userDoc.exists) {
         String role = userDoc.get('role');
+
+        if (!mounted) return;
+
         if (role == 'admin') {
           // Admin paneli rotası (İbo yapınca aktif edeceğim)   !!!!!UNUTMAAAAAAAAAA
-          // Navigator.pushReplacementNamed(context, '/adminHome');
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Admin girişi! (Admin sayfası henüz yok)")));
+          Navigator.pushReplacementNamed(context, '/adminHome');
         } else {
           // Normal User -> Ana Sayfaya
           Navigator.pushReplacementNamed(context, '/home');
         }
       }
     } on FirebaseAuthException catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Hata: ${e.message}"), backgroundColor: Colors.red));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Hata: ${e.message}"),
+          backgroundColor: Colors.red,
+        ),
+      );
     } finally {
       if(mounted) setState(() => _isLoading = false);
     }

@@ -222,7 +222,6 @@ class _MapScreenState extends State<MapScreen> {
             myLocationEnabled: true,
             myLocationButtonEnabled: true, // Sağ üstteki konum butonu
             zoomGesturesEnabled: true,
-            // Konum butonunu biraz aşağı itmek için padding (Çünkü üstüne kendi butonumuzu koyacağız)
             padding: EdgeInsets.only(top: 60), 
           ),
 

@@ -12,12 +12,12 @@ class MapScreen extends StatefulWidget {
 }
 
 class _MapScreenState extends State<MapScreen> {
+  // BAŞLANGIÇ KONUMU (Kampüs Koordinatları)
   final CameraPosition _initialCameraPosition = const CameraPosition(
     target: LatLng(39.89942065166383, 41.243193915599775),
     zoom: 15.0,
   );
 
-  GoogleMapController? _mapController;
   Set<Marker> _markers = {};
   
   // Verileri hafızada tutacağız ki mod değiştirince tekrar internetten çekmesin
@@ -29,9 +29,11 @@ class _MapScreenState extends State<MapScreen> {
   @override
   void initState() {
     super.initState();
-    _checkUserRole();
+    _checkUserRole(); // Kullanıcı rolünü kontrol et
   }
 
+  // KULLANICI ROLÜ KONTROLÜ
+  // Admin mi öğrenci mi diye bakar, ona göre harita özellikleri değişir
   void _checkUserRole() async {
     User? user = FirebaseAuth.instance.currentUser;
     if (user != null) {
@@ -42,9 +44,11 @@ class _MapScreenState extends State<MapScreen> {
         });
       }
     }
-    _listenToIncidents(); 
+    _listenToIncidents(); // Olayları dinlemeye başla
   }
 
+  // OLAYLARI DİNLE (REALTIME)
+  // Firestore'dan gelen her güncellemede markerları yeniden çizer
   void _listenToIncidents() {
     FirebaseFirestore.instance.collection('incidents').snapshots().listen((snapshot) {
       // Gelen veriyi hafızaya al
@@ -72,7 +76,7 @@ class _MapScreenState extends State<MapScreen> {
       
       if (_isAdmin && _colorByStatus) {
         // MOD 1: DURUMA GÖRE RENKLENDİRME (Sadece Admin Görebilir)
-        if (incident.status == 'İnceleniyor') markerHue = BitmapDescriptor.hueOrange; // Çok dikkat çeksin
+        if (incident.status == 'İnceleniyor') markerHue = BitmapDescriptor.hueOrange; 
         else if (incident.status == 'Çözüldü') markerHue = BitmapDescriptor.hueGreen;
         else markerHue = BitmapDescriptor.hueRed; // Açık
       } else {
@@ -107,6 +111,8 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
+  // OLAY DETAY PANELİ (Marker'a Tıklanınca)
+  // Haritadaki bir marker'a tıklanınca alt panel açılır
   void _showIncidentPanel(Incident incident) {
     showModalBottomSheet(
       context: context,
@@ -173,12 +179,16 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
+  // DURUM RENGİ BELİRLEME
+  // Her durum için farklı renk döndürür (panel'de gösterim için)
   Color _getStatusColor(String status) {
     if (status == 'İnceleniyor') return Colors.orange;
     if (status == 'Çözüldü') return Colors.green;
     return Colors.red;
   }
 
+  // DURUM GÜNCELLEME DİALOGU (Sadece Admin)
+  // Admin bir olayın durumunu değiştirebilir
   void _showStatusUpdateDialog(Incident incident) {
     String selectedStatus = incident.status;
     showDialog(
@@ -204,6 +214,8 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
+  // OLAY SİLME (Sadece Admin)
+  // Seçilen olayı veritabanından siler
   void _deleteIncident(String id) async {
     await FirebaseFirestore.instance.collection('incidents').doc(id).delete();
   }
@@ -216,6 +228,7 @@ class _MapScreenState extends State<MapScreen> {
       ),
       body: Stack(
         children: [
+          // HARİTA WİDGET'I
           GoogleMap(
             initialCameraPosition: _initialCameraPosition,
             markers: _markers,
@@ -226,6 +239,7 @@ class _MapScreenState extends State<MapScreen> {
           ),
 
           // --- ADMIN İÇİN RENK MODU DEĞİŞTİRME BUTONU ---
+          // Admin haritada renklendirme modunu değiştirebilir (Tür/Durum)
           if (_isAdmin)
             Positioned(
               top: 10,
@@ -237,7 +251,7 @@ class _MapScreenState extends State<MapScreen> {
                   onTap: () {
                     setState(() {
                       _colorByStatus = !_colorByStatus; // Modu tersine çevir
-                      _updateMarkers(); // Haritayı yeniden boya
+                      _updateMarkers(); // Harita pinlerini güncelle
                     });
                   },
                   borderRadius: BorderRadius.circular(30),

@@ -60,11 +60,11 @@ class _CreateIncidentScreenState extends State<CreateIncidentScreen> {
       setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Konum bilgisi alınamadı')));
-      }
     }
+  }
 
-    void _pickLocationOnMap() async {
-      final LatLng? pickedLocation = await Navigator.of(context).push<LatLng>(
+  void _pickLocationOnMap() async {
+    final LatLng? pickedLocation = await Navigator.of(context).push<LatLng>(
       MaterialPageRoute(
         builder: (ctx) => LocationPickerScreen(),
       ),
@@ -78,10 +78,9 @@ class _CreateIncidentScreenState extends State<CreateIncidentScreen> {
         SnackBar(content: Text("Konum haritadan alındı!")),
       );
     }
+  }
 
-    }
-
-    Future<void> _submitIncident() async {
+  Future<void> _submitIncident() async {
       if (!_formKey.currentState!.validate()) return;
       if (_selectedLocation == null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -112,6 +111,7 @@ class _CreateIncidentScreenState extends State<CreateIncidentScreen> {
           title: TitleController.text,
           description: DescriptionController.text,
           type: selectedType!,
+          status: 'İnceleniyor', // Yeni bildirimler önce incelenmeyi bekler
           latitude: _selectedLocation!.latitude,
           longitude: _selectedLocation!.longitude,
           imageUrl: imageUrl,

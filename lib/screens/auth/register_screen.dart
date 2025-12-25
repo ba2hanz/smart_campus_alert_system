@@ -29,7 +29,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       // 2. Firestore'a Detayları Yaz (Kritik Nokta: role = 'user')
       await FirebaseFirestore.instance.collection('users').doc(userCred.user!.uid).set({
         'uid': userCred.user!.uid,
-        'fullName': _nameController.text.trim(),
+        'name': _nameController.text.trim(),
         'email': _emailController.text.trim(),
         'department': _deptController.text.trim(),
         'role': 'user', // <-- BURASI ÇOK ÖNEMLİ

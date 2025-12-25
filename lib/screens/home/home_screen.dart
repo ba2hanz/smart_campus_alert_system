@@ -19,10 +19,11 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _getFollowedIncidents();
+    _getFollowedIncidents(); // Takip edilen olayları yükle
     _checkIfAdmin(); // Rol kontrolü
   }
 
+  // KULLANICI ROLÜ KONTROLÜ
   // Kullanıcı Admin mi diye bakar
   void _checkIfAdmin() async {
     User? user = FirebaseAuth.instance.currentUser;
@@ -40,6 +41,8 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  // TAKİP EDİLEN OLAYLARI YÜKLE
+  // Kullanıcının takip ettiği olay ID'lerini Firestore'dan çeker
   void _getFollowedIncidents() async {
     User? user = FirebaseAuth.instance.currentUser;
     if (user != null) {
@@ -119,9 +122,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   // İnceleniyor olanlar asla görünmesin
                   if (status == 'İnceleniyor' || status == 'Inceleniyor') return false;
 
+                  // Başlıkta aranan kelime var mı?
                   bool matchesSearch = data['title'].toString().toLowerCase().contains(_searchQuery);
+                  
+                  // Seçilen filtreye uyuyor mu?
                   bool matchesFilter = true;
-
                   if (_filter == "Acik") matchesFilter = status == "Acik" || status == "Açık";
                   if (_filter == "Takip") matchesFilter = _followedIds.contains(doc.id);
 

@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:googleapis_auth/auth_io.dart'; 
 import 'package:smart_campus_alert_system/models/incident_model.dart'; 
 
@@ -14,11 +13,14 @@ class AdminHomeScreen extends StatefulWidget {
 class _AdminHomeScreenState extends State<AdminHomeScreen> {
   String _filter = "Tümü";
 
-  Future<void> _sendPushNotification(String title, String body) async {
+  //BİLDİRİM GÖNDERME 
+  // topic parametresi varsayılan olarak 'all' (herkes) alır.
+  // Ama durum güncellemesi yaparken buraya 'incident_ID' göndereceğiz.
+  Future<void> _sendPushNotification(String title, String body, {String topic = 'all'}) async {
     try {
-      // Service Account dosyasını oku
+      // Service Account dosyasını assets klasöründen oku
       final jsonString = await rootBundle.loadString('assets/service_account.json');
-      final serviceAccount = ServiceAccountCredentials.fromJson(jsonString);
+      final serviceAccount = ServiceAccountCredentials.fromJson(jsonDecode(jsonString));
 
       // Google'dan yetki iste
       final scopes = ['https://www.googleapis.com/auth/firebase.messaging'];
@@ -34,7 +36,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         },
         body: jsonEncode({
           'message': {
-            'topic': 'all', 
+            'topic': topic, 
             'notification': {
               'title': title,
               'body': body,
@@ -48,21 +50,24 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       );
 
       if (response.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Duyuru başarıyla gönderildi! (V1)")));
+        // Sadece admin manuel gönderdiyse ekranda bilgi ver, otomatikse sessiz kalabilir
+        if (topic == 'all') {
+           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Duyuru başarıyla gönderildi!")));
+        }
       } else {
         print("Hata Detayı: ${response.body}");
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Gönderilemedi. Hata kodu: ${response.statusCode}")));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Gönderilemedi. Hata: ${response.statusCode}")));
       }
       
       client.close();
 
     } catch (e) {
-      print("V1 Bildirim Hatası: $e");
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Hata: JSON dosyası veya internet sorunu.")));
+      print("Bildirim Hatası: $e");
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Hata: JSON dosyası okunamadı.")));
     }
   }
 
-  // --- DİYALOG PENCERESİ ---
+  // ACİL DURUM DUYURUSU (Admin Butona Basınca)
   void _showNotificationDialog() {
     TextEditingController titleController = TextEditingController();
     TextEditingController bodyController = TextEditingController();
@@ -76,7 +81,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text("Bu mesaj HTTP v1 protokolü ile herkese gönderilecektir."),
+            Text("Bu mesaj tüm kampüse gönderilecektir."),
             SizedBox(height: 10),
             TextField(controller: titleController, decoration: InputDecoration(hintText: "Başlık", border: OutlineInputBorder())),
             SizedBox(height: 10),
@@ -89,6 +94,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
             onPressed: () {
               if (titleController.text.isNotEmpty && bodyController.text.isNotEmpty) {
+                // varsayılan olarak 'all' (herkes) gidecek
                 _sendPushNotification(titleController.text, bodyController.text);
                 Navigator.pop(context);
               }
@@ -100,7 +106,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     );
   }
   
-  void _updateStatus(String docId, String currentStatus) {
+  // OTOMATİK BİLDİRİM (Durum Değişince)
+  // incidentTitle parametresi eklendi ki mesajda olay adı yazsın
+  void _updateStatus(String docId, String currentStatus, String incidentTitle) {
     showDialog(
       context: context,
       builder: (context) {
@@ -120,11 +128,21 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             TextButton(onPressed: () => Navigator.pop(context), child: Text("İptal")),
             ElevatedButton(
               onPressed: () async {
+                // Veritabanını Güncelle
                 await FirebaseFirestore.instance.collection('incidents').doc(docId).update({
                   'status': selectedStatus
                 });
+
+                // OTOMATİK BİLDİRİM TETİKLE
+                // Sadece bu olayın ID'sine abone olanlara gider
+                await _sendPushNotification(
+                  "Durum Güncellemesi", 
+                  "'$incidentTitle' olayının durumu '$selectedStatus' olarak değiştirildi.",
+                  topic: "incident_$docId" 
+                );
+
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Durum güncellendi!")));
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Durum güncellendi ve takipçilere bildirildi!")));
               },
               child: Text("Kaydet"),
             )
@@ -155,10 +173,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       ),
     );
   }
-  
-  void _logout() async {
-    await FirebaseAuth.instance.signOut();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -169,14 +183,13 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         leading: IconButton(
           icon: Icon(Icons.campaign), 
           tooltip: "Duyuru Yap",
-          onPressed: _showNotificationDialog,
+          onPressed: _showNotificationDialog, // ACİL DURUM DUYURUSU
         ),
         actions: [
           IconButton(
             icon: Icon(Icons.remove_red_eye), 
             tooltip: "Öğrenci Görünümüne Geç",
             onPressed: () {
-              // Öğrenci ekranını (HomeScreen) Admin ekranının üstüne açıyoruz
               Navigator.pushNamed(context, '/home'); 
             },
           ),
@@ -276,7 +289,8 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                           children: [
                             IconButton(
                               icon: Icon(Icons.edit, color: Colors.blue),
-                              onPressed: () => _updateStatus(incident.id, incident.status),
+                              // updateStatus'a başlığı da gönderiyoruz
+                              onPressed: () => _updateStatus(incident.id, incident.status, incident.title),
                             ),
                             IconButton(
                               icon: Icon(Icons.delete, color: Colors.red),

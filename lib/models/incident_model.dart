@@ -17,7 +17,7 @@ class Incident {
     required this.title,
     required this.description,
     required this.type,
-    this.status = 'Acik',
+    this.status = 'İnceleniyor', // Varsayılan durum: İnceleniyor
     required this.latitude,
     required this.longitude,
     this.imageUrl,

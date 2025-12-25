@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 //import '../../models/incident_model.dart';
 import 'package:smart_campus_alert_system/models/incident_model.dart';
 
@@ -38,14 +39,21 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
 
   void _toggleFollow() async {
     if (uid == null) return;
+    final topic = 'incident_${incident.id}';
+    final messaging = FirebaseMessaging.instance;
+    
     if (_isFollowing) {
+      // Takibi kaldır: Firestore'dan çıkar ve FCM topic'inden unsubscribe ol
       await FirebaseFirestore.instance.collection('users').doc(uid).update({
         'followedIncidents': FieldValue.arrayRemove([incident.id])
       });
+      await messaging.unsubscribeFromTopic(topic);
     } else {
+      // Takip et: Firestore'a ekle ve FCM topic'ine subscribe ol
       await FirebaseFirestore.instance.collection('users').doc(uid).update({
         'followedIncidents': FieldValue.arrayUnion([incident.id])
       });
+      await messaging.subscribeToTopic(topic);
     }
     setState(() => _isFollowing = !_isFollowing);
   }

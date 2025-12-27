@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/incident_model.dart';
-
+//hem userr(öğrenci) hem admin için ana ekran
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -11,15 +11,15 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  String _filter = "Tümü";
-  String _searchQuery = "";
-  List<String> _followedIds = [];
+  String _filter = "Tümü";  //hangi olayların gösterileceği filtresi
+  String _searchQuery = "";  //arama çubuğuna yazılan metin
+  List<String> _followedIds = []; // kullanıcının takip ettiği olay ID'leri
   bool _isAdmin = false; // Admin mi kontrolü için
 
   @override
   void initState() {
     super.initState();
-    _getFollowedIncidents(); // Takip edilen olayları yükle
+    _getFollowedIncidents(); // Takip edilen olayları yükle veritabanından
     _checkIfAdmin(); // Rol kontrolü
   }
 
@@ -54,7 +54,7 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     }
   }
-
+// ana ekran yapısındaki butonlar arama filtreleme listeleme gibi işlemler
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -122,10 +122,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   // İnceleniyor olanlar asla görünmesin
                   if (status == 'İnceleniyor' || status == 'Inceleniyor') return false;
 
-                  // Başlıkta aranan kelime var mı?
+                  // Başlıkta aranan kelime var mı diye bak
                   bool matchesSearch = data['title'].toString().toLowerCase().contains(_searchQuery);
                   
-                  // Seçilen filtreye uyuyor mu?
+                  // Seçilen filtreye uyuyor mu
                   bool matchesFilter = true;
                   if (_filter == "Acik") matchesFilter = status == "Acik" || status == "Açık";
                   if (_filter == "Takip") matchesFilter = _followedIds.contains(doc.id);
@@ -165,7 +165,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       
-      // --- DİNAMİK BUTON ---
+      // DİNAMİK BUTON
       floatingActionButton: _isAdmin
           ? Row(
               mainAxisAlignment: MainAxisAlignment.end, 

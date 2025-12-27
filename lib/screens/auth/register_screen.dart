@@ -8,32 +8,32 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-  final _formKey = GlobalKey<FormState>();
+  final _formKey = GlobalKey<FormState>();  // form doğrulama anahtarı e posta şifre vs geçerli mi diye
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _nameController = TextEditingController();
-  final _deptController = TextEditingController();
+  final _deptController = TextEditingController();   // controllerlar kullanıcının email passowrd name gibi girişlerini kontrol etmek için
   bool _isLoading = false;
 
-  Future<void> _register() async {
+  Future<void> _register() async {  // önce girilen bilgilerin doğruluğunu kontrol et sıkıntı yoksa firebase e kaydet
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
 
     try {
-      // 1. Auth ile Kullanıcı Oluştur
+      // auth ile kullanıcı oluştur
       UserCredential userCred = await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
 
-      // 2. Firestore'a Detayları Yaz (Kritik Nokta: role = 'user')
+      // firestore'a detayları yaz (Kritik Nokta: role = 'user')
       await FirebaseFirestore.instance.collection('users').doc(userCred.user!.uid).set({
         'uid': userCred.user!.uid,
         'name': _nameController.text.trim(),
         'email': _emailController.text.trim(),
         'department': _deptController.text.trim(),
-        'role': 'user', // <-- BURASI ÇOK ÖNEMLİ
-        'followedIncidents': [], // Takip listesi boş başlar
+        'role': 'user', // tüm yeni kayıtlar normal kullanıcı olarak başlar
+        'followedIncidents': [], // kullanıcının takip ettiği olaylar için boş liste
         'createdAt': FieldValue.serverTimestamp(),
       });
 
@@ -56,7 +56,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         child: Form(
           key: _formKey,
           child: Column(
-            children: [
+            children: [                                                                                                                   //validator gerekli kılıyor değerleri
               TextFormField(controller: _nameController, decoration: InputDecoration(labelText: "Ad Soyad", border: OutlineInputBorder()), validator: (v) => v!.isEmpty ? "Gerekli" : null),
               SizedBox(height: 10),
               TextFormField(controller: _deptController, decoration: InputDecoration(labelText: "Birim / Bölüm", border: OutlineInputBorder()), validator: (v) => v!.isEmpty ? "Gerekli" : null),

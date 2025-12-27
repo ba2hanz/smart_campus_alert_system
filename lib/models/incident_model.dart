@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-
+// olayın modeli 
 class Incident {
   final String id;
   final String title;
@@ -11,20 +11,21 @@ class Incident {
   final String? imageUrl;
   final DateTime createdAt;
   final String userId;
-
+// olayın hangi bilgilerini tutacağını tanımlıyoruz
+//required zorunlu alanlar demke
   Incident({
     required this.id,
     required this.title,
     required this.description,
     required this.type,
-    this.status = 'İnceleniyor', // Varsayılan durum: İnceleniyor
+    this.status = 'İnceleniyor', // durum belirtilmemişse varsayılan değer
     required this.latitude,
     required this.longitude,
     this.imageUrl,
     required this.createdAt,
     required this.userId,
   });
-
+// firestore dan gelen veriyi modele çeviriyoruz
   factory Incident.fromMap(Map<String, dynamic> map, String docId) {
     return Incident(
       id: docId,
@@ -40,7 +41,7 @@ class Incident {
       userId: map['userId'] ?? '',
     );
   }
-
+  // veritabanına yeni bir kayıt eklerken veya güncellerken bu metodu çağıracağız
   Map<String, dynamic> toMap() {
     return {
       'title': title,

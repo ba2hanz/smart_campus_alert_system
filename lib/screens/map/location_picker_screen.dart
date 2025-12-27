@@ -9,7 +9,7 @@ class LocationPickerScreen extends StatefulWidget {
 }
 
 class _LocationPickerScreenState extends State<LocationPickerScreen> {
-  LatLng? _pickedLocation; // Seçilen konum
+  LatLng? _pickedLocation; // kullanıcının seçtiği konum
 
   // BAŞLANGIÇ KONUMU (Kampüs Koordinatları)
   static const LatLng _defaultLocation = LatLng(39.89942065166383, 41.243193915599775); 

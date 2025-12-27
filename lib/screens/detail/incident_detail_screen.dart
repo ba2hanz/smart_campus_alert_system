@@ -11,9 +11,18 @@ class IncidentDetailScreen extends StatefulWidget {
 }
 
 class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
-  bool _isFollowing = false; 
+  bool _isFollowing = false;
   late Incident incident;
   String? uid = FirebaseAuth.instance.currentUser?.uid;
+
+  bool _incidentLoaded = false; //  args geldi mi kontrolü (late hatası olmasın diye)
+
+  //  tarih formatlama fonksiyonu
+  String _formatDateTime(DateTime dt) {
+    if (dt.millisecondsSinceEpoch == 0) return "-";
+    String two(int n) => n.toString().padLeft(2, '0');
+    return "${two(dt.day)}.${two(dt.month)}.${dt.year} ${two(dt.hour)}:${two(dt.minute)}";
+  }
 
   @override
   void didChangeDependencies() {
@@ -21,6 +30,7 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
     final args = ModalRoute.of(context)?.settings.arguments;
     if (args is Incident) {
       incident = args;
+      _incidentLoaded = true; 
       if (uid != null) _checkFollowStatus();  // kullanıcının bu olayı takip edip etmediğini kontrol
     }
   }
@@ -36,17 +46,18 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
       }
     }
   }
- // hem veritabanını günceller hem bildirim ayarlarını yapar
+
+  // hem veritabanını günceller hem bildirim ayarlarını yapar
   void _toggleFollow() async {
     if (uid == null) return;
     final topic = 'incident_${incident.id}';
     final messaging = FirebaseMessaging.instance;
-    
+
     if (_isFollowing) {
       // Takibi kaldır: veritabanındaki listeden çkar
       await FirebaseFirestore.instance.collection('users').doc(uid).update({
         'followedIncidents': FieldValue.arrayRemove([incident.id])
-      });  // bildirim kanalından çık 
+      });  // bildirim kanalından çık
       await messaging.unsubscribeFromTopic(topic);
     } else {
       // Takip et: veritabanındaki listeye ekle
@@ -54,7 +65,7 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
         'followedIncidents': FieldValue.arrayUnion([incident.id])
       });
       await messaging.subscribeToTopic(topic);
-    } 
+    }
     setState(() => _isFollowing = !_isFollowing); //butonun durumunu tersne çevir
   }
 
@@ -63,6 +74,13 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
     // Eğer veri gelmediyse boş dön
     if (uid == null) return Scaffold(body: Center(child: Text("Hata: Giriş yapılmadı")));
 
+    if (!_incidentLoaded) {
+      return Scaffold(
+        appBar: AppBar(title: Text("Detaylar")), //ekranın üstündeki bardaki detaylar yazısı
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(title: Text("Detaylar")), //ekranın üstündeki bardaki detaylar yazısı
       body: Padding(
@@ -70,16 +88,30 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (incident.imageUrl != null && incident.imageUrl!.isNotEmpty) 
+            if (incident.imageUrl != null && incident.imageUrl!.isNotEmpty)
               Image.network(incident.imageUrl!, height: 200, width: double.infinity, fit: BoxFit.cover),
             SizedBox(height: 10),
-            
+
             Text(incident.title, style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
             Text(incident.type, style: TextStyle(color: Colors.grey)),
+
+            // olayın tarihi
+            SizedBox(height: 6),
+            Row(
+              children: [
+                Icon(Icons.schedule, size: 18, color: Colors.grey),
+                SizedBox(width: 6),
+                Text(
+                  "Tarih: ${_formatDateTime(incident.createdAt)}",
+                  style: TextStyle(color: Colors.grey[700]),
+                ),
+              ],
+            ),
+
             SizedBox(height: 20),
             Text(incident.description, style: TextStyle(fontSize: 16)),
             Spacer(),
-            
+
             SizedBox(  //metin gösterme işi özelliklrei vs
               width: double.infinity,
               height: 50,

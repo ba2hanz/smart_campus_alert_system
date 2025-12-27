@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'screens/auth/forgot_password_screen.dart';
 
 import 'firebase_options.dart'; 
 import 'screens/profile/profile_screen.dart';
@@ -137,6 +138,8 @@ class _MyAppState extends State<MyApp> {
         '/createIncident': (context) => CreateIncidentScreen(),
         '/adminHome': (context) => AdminHomeScreen(),
         '/profile': (context) => ProfileScreen(),
+        '/forgotPassword': (context) => ForgotPasswordScreen(),
+
       },
     );
   }

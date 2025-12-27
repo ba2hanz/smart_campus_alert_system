@@ -118,7 +118,18 @@ class _CreateIncidentScreenState extends State<CreateIncidentScreen> {
           createdAt: DateTime.now(),
           userId: user.uid,
         );
-        await FirebaseFirestore.instance.collection('incidents').add(newIncident.toMap());
+        final data = newIncident.toMap();
+        // Server saati ile yaz kronolojik sıra için
+        data['createdAt'] = FieldValue.serverTimestamp();
+
+        await FirebaseFirestore.instance.collection('incidents').add(data);
+        @override
+        void dispose() {
+        TitleController.dispose();
+        DescriptionController.dispose();
+        super.dispose();
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Bildirim başarıyla kaydedildi')));
         Navigator.pop(context);

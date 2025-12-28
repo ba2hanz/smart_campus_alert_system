@@ -152,6 +152,42 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       },
     );
   }
+//aciklama düzenleme
+  void _editDescription(String docId, String currentDescription) {
+    TextEditingController _descController = TextEditingController(text: currentDescription);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("Açıklamayı Düzenle"),
+        content: TextField(
+          controller: _descController,
+          maxLines: 5, // Uzun açıklamalar için alan
+          decoration: InputDecoration(
+            hintText: "Yeni açıklamayı giriniz...",
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: Text("İptal")),
+          ElevatedButton(
+            onPressed: () async {
+              if (_descController.text.isNotEmpty) {
+                // Veritabanını güncelle
+                await FirebaseFirestore.instance.collection('incidents').doc(docId).update({
+                  'description': _descController.text
+                });
+                
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Açıklama güncellendi.")));
+              }
+            },
+            child: Text("Kaydet"),
+          )
+        ],
+      ),
+    );
+  }
 //olay silme 
   void _deleteIncident(String docId) {
     showDialog(
@@ -289,12 +325,18 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             IconButton(
+                              icon: Icon(Icons.description, color: Colors.purple),
+                              tooltip: "Açıklamayı Düzenle",
+                              onPressed: () => _editDescription(incident.id, incident.description),
+                            ),
+                            IconButton(
                               icon: Icon(Icons.edit, color: Colors.blue),
-                              // updateStatus'a başlığı da gönderiyoruz
+                              tooltip: "Durumu Güncelle",
                               onPressed: () => _updateStatus(incident.id, incident.status, incident.title),
                             ),
                             IconButton(
                               icon: Icon(Icons.delete, color: Colors.red),
+                              tooltip: "Bildirimi Sil",
                               onPressed: () => _deleteIncident(incident.id),
                             ),
                           ],

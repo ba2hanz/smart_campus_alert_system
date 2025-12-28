@@ -19,7 +19,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     'guvenlik': true,
     'teknik': true,
     'cevre': true,
-    'diger': true,
+    'genel': true,
+    'kayip': true,
   };
 
   @override
@@ -66,6 +67,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Card(
                   child: Column(
                     children: [
+                      _buildSwitchTile("Genel Duyurular", "genel"),
+                      Divider(height: 1),
+                      _buildSwitchTile("Kayıp & Buluntu", "kayip"),
+                      Divider(height: 1),
                       _buildSwitchTile("Sağlık Bildirimleri", "saglik"),
                       Divider(height: 1),
                       _buildSwitchTile("Güvenlik Bildirimleri", "guvenlik"),

@@ -140,7 +140,7 @@ class _MyAppState extends State<MyApp> {
         '/adminHome': (context) => AdminHomeScreen(),
         '/profile': (context) => ProfileScreen(),
         '/forgotPassword': (context) => ForgotPasswordScreen(),
-
+        
       },
     );
   }
@@ -159,7 +159,7 @@ class AuthWrapper extends StatelessWidget {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Scaffold(body: Center(child: CircularProgressIndicator()));
         }
-        // 2. Kullanıcı Giriş Yapmışsa -> Rolüne Göre Ana Sayfaya Gönder
+        // 2. Kullanıcı Giriş Yapmışsa -> Ana Sayfaya Gönder
         if (snapshot.hasData) {
           return RoleCheckWrapper(); 
         }

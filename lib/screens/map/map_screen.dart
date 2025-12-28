@@ -39,9 +39,13 @@ class _MapScreenState extends State<MapScreen> {
     if (user != null) {
       var doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
       if (doc.exists && doc.data() != null) {
-        setState(() {
-          _isAdmin = doc.get('role') == 'admin';
-        });
+        if (mounted) {
+          setState(() {
+            _isAdmin = doc.get('role') == 'admin';
+          });
+          // Admin yetkisi geç yüklenirse haritayı yeniden yüklensin.
+          _updateMarkers(); 
+        }
       }
     }
     _listenToIncidents(); // Olayları dinlemeye başla
@@ -64,11 +68,18 @@ class _MapScreenState extends State<MapScreen> {
     
     for (var doc in _currentDocs) {
       var data = doc.data() as Map<String, dynamic>;
+      
+      if (data['latitude'] == null || data['longitude'] == null) continue;
+
       var incident = Incident.fromMap(data, doc.id);
 
       // --- GÜVENLİK FİLTRESİ ---
-      if (!_isAdmin && (incident.status == 'Inceleniyor' || incident.status == 'Beklemede')) {
-        continue; 
+      if (!_isAdmin) {
+        if (incident.status == 'İnceleniyor' || 
+            incident.status == 'Inceleniyor' || 
+            incident.status == 'Beklemede') {
+          continue;
+        }
       }
 
       // --- RENK SEÇİMİ (MODA GÖRE) ---

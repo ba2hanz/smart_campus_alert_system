@@ -3,11 +3,9 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-<<<<<<< HEAD
-=======
+
 import 'screens/auth/forgot_password_screen.dart';
 
->>>>>>> d7e333a3c01720ffb6dd141a6b013bbca99ed18e
 import 'firebase_options.dart'; 
 import 'screens/profile/profile_screen.dart';
 import 'screens/auth/login_screen.dart';

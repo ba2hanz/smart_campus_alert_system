@@ -3,7 +3,6 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-
 import 'firebase_options.dart'; 
 import 'screens/profile/profile_screen.dart';
 import 'screens/auth/login_screen.dart';
@@ -155,7 +154,7 @@ class AuthWrapper extends StatelessWidget {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Scaffold(body: Center(child: CircularProgressIndicator()));
         }
-        // 2. Kullanıcı Giriş Yapmışsa -> Ana Sayfaya Gönder
+        // 2. Kullanıcı Giriş Yapmışsa -> Rolüne Göre Ana Sayfaya Gönder
         if (snapshot.hasData) {
           return RoleCheckWrapper(); 
         }

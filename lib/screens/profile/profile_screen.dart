@@ -188,7 +188,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // Takip Edilenler Listesi (StreamBuilder ile)
+  // Takip Edilenler Listesi
   Widget _buildFollowedIncidentsList(List<String> ids) {
     
     if (ids.isEmpty) return SizedBox.shrink();
@@ -209,7 +209,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
         return ListView.builder(
           shrinkWrap: true, 
-          physics: NeverScrollableScrollPhysics(), // Ana sayfa scroll olsun
+          physics: NeverScrollableScrollPhysics(),
           itemCount: myIncidents.length,
           itemBuilder: (context, index) {
             var data = myIncidents[index].data() as Map<String, dynamic>;

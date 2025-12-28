@@ -12,6 +12,8 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _isLoading = false;
 
+  bool _obscurePassword = true;
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -79,8 +81,20 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final border = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+    );
+
     return Scaffold(
-      appBar: AppBar(title: Text("Akıllı Kampüs Giriş")),
+      appBar: AppBar(
+        title: Row(
+          children: const [
+            Icon(Icons.login_rounded),
+            SizedBox(width: 8),
+            Text("Akıllı Kampüs Giriş"),
+          ],
+        ),
+      ),
       body: Padding(
         padding: EdgeInsets.all(16),
         child: Column(
@@ -88,27 +102,46 @@ class _LoginScreenState extends State<LoginScreen> {
           children: [
             TextField(
               controller: _emailController,
+              keyboardType: TextInputType.emailAddress,
               decoration: InputDecoration(
                 labelText: "E-posta",
-                prefixIcon: Icon(Icons.email),
+                prefixIcon: Icon(Icons.alternate_email_rounded),
+                border: border,
+                enabledBorder: border,
+                focusedBorder: border,
               ),
             ),
             SizedBox(height: 10),
             TextField(
               controller: _passwordController,
-              obscureText: true,
+              obscureText: _obscurePassword,
               decoration: InputDecoration(
                 labelText: "Şifre",
-                prefixIcon: Icon(Icons.lock),
+                prefixIcon: Icon(Icons.password_rounded),
+                border: border,
+                enabledBorder: border,
+                focusedBorder: border,
+                suffixIcon: IconButton(
+                  tooltip: _obscurePassword ? "Şifreyi göster" : "Şifreyi gizle",
+                  icon: Icon(
+                    _obscurePassword
+                        ? Icons.visibility_rounded
+                        : Icons.visibility_off_rounded,
+                  ),
+                  onPressed: () {
+                    setState(() => _obscurePassword = !_obscurePassword);
+                  },
+                ),
               ),
             ),
 
             // Şifremi Unuttum
             Align(
               alignment: Alignment.centerRight,
-              child: TextButton(
+              child: TextButton.icon(
                 onPressed: () => Navigator.pushNamed(context, '/forgotPassword'),
-                child: Text("Şifremi unuttum"),
+                icon: const Icon(Icons.help_outline_rounded),
+                label: const Text("Şifremi unuttum"),
               ),
             ),
 
@@ -116,17 +149,19 @@ class _LoginScreenState extends State<LoginScreen> {
 
             _isLoading
                 ? CircularProgressIndicator()
-                : ElevatedButton(
+                : ElevatedButton.icon(
                     onPressed: _login,
-                    child: Text("Giriş Yap"),
+                    icon: const Icon(Icons.arrow_forward_rounded),
+                    label: Text("Giriş Yap"),
                     style: ElevatedButton.styleFrom(
                       minimumSize: Size(double.infinity, 50),
                     ),
                   ),
 
-            TextButton(
+            TextButton.icon(
               onPressed: () => Navigator.pushNamed(context, '/register'),
-              child: Text("Hesabın yok mu? Kayıt Ol"),
+              icon: const Icon(Icons.person_add_alt_1_rounded),
+              label: const Text("Hesabın yok mu? Kayıt Ol"),
             ),
           ],
         ),

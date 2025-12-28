@@ -76,13 +76,29 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
 
     if (!_incidentLoaded) {
       return Scaffold(
-        appBar: AppBar(title: Text("Detaylar")), //ekranın üstündeki bardaki detaylar yazısı
+        appBar: AppBar(
+          title: Row(
+            children: const [
+              Icon(Icons.info_outline_rounded),
+              SizedBox(width: 8),
+              Text("Detaylar"),
+            ],
+          ),
+        ), //ekranın üstündeki bardaki detaylar yazısı
         body: Center(child: CircularProgressIndicator()),
       );
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text("Detaylar")), //ekranın üstündeki bardaki detaylar yazısı
+      appBar: AppBar(
+        title: Row(
+          children: const [
+            Icon(Icons.info_outline_rounded),
+            SizedBox(width: 8),
+            Text("Detaylar"),
+          ],
+        ),
+      ), //ekranın üstündeki bardaki detaylar yazısı
       body: Padding(
         padding: EdgeInsets.all(16.0),
         child: Column(
@@ -99,7 +115,7 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
             SizedBox(height: 6),
             Row(
               children: [
-                Icon(Icons.schedule, size: 18, color: Colors.grey),
+                Icon(Icons.access_time_rounded, size: 18, color: Colors.grey),
                 SizedBox(width: 6),
                 Text(
                   "Tarih: ${_formatDateTime(incident.createdAt)}",
@@ -116,7 +132,7 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
               width: double.infinity,
               height: 50,
               child: ElevatedButton.icon(
-                icon: Icon(_isFollowing ? Icons.check : Icons.star_border),
+                icon: Icon(_isFollowing ? Icons.done_all_rounded : Icons.notifications_active_rounded),
                 label: Text(_isFollowing ? "TAKİP EDİLİYOR" : "TAKİP ET"),
                 style: ElevatedButton.styleFrom(backgroundColor: _isFollowing ? Colors.green : Colors.blue),
                 onPressed: _toggleFollow,

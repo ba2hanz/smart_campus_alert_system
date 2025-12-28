@@ -29,7 +29,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text("Profil ve Ayarlar"),
+        title: Row(
+          children: const [
+            Icon(Icons.manage_accounts_rounded),
+            SizedBox(width: 8),
+            Text("Profil ve Ayarlar"),
+          ],
+        ),
       ),
       body: StreamBuilder<DocumentSnapshot>(
         stream: FirebaseFirestore.instance.collection('users').doc(user!.uid).snapshots(),
@@ -105,7 +111,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       padding: EdgeInsets.symmetric(vertical: 15),
                       foregroundColor: Colors.white,
                     ),
-                    icon: Icon(Icons.exit_to_app),
+                    icon: Icon(Icons.logout_rounded),
                     label: Text("Güvenli Çıkış Yap", style: TextStyle(fontSize: 16)),
                     onPressed: _logout,
                   ),
@@ -223,12 +229,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
             return Card(
               margin: EdgeInsets.symmetric(vertical: 5),
               child: ListTile(
-                leading: Icon(Icons.bookmark, color: Colors.blueAccent),
+                leading: Icon(Icons.bookmark_added_rounded, color: Colors.blueAccent),
                 title: Text(incident.title, maxLines: 1, overflow: TextOverflow.ellipsis),
                 subtitle: Text(incident.status, style: TextStyle(
                   color: incident.status == 'Cozuldu' ? Colors.green : Colors.orange
                 )),
-                trailing: Icon(Icons.arrow_forward_ios, size: 14),
+                trailing: Icon(Icons.chevron_right_rounded, size: 20),
                 onTap: () {
                   Navigator.pushNamed(context, '/detail', arguments: incident);
                 },

@@ -76,7 +76,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: Row(
-          children: [Icon(Icons.campaign, color: Colors.red), SizedBox(width: 10), Text("Acil Duyuru")],
+          children: [Icon(Icons.notifications_active_rounded, color: Colors.red), SizedBox(width: 10), Text("Acil Duyuru")],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -218,25 +218,25 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         title: Text("Yönetici Paneli"),
         backgroundColor: Colors.redAccent,
         leading: IconButton(
-          icon: Icon(Icons.campaign), 
+          icon: Icon(Icons.notifications_active_rounded), 
           tooltip: "Duyuru Yap",
           onPressed: _showNotificationDialog, // ACİL DURUM DUYURUSU
         ),
         actions: [
           IconButton(
-            icon: Icon(Icons.remove_red_eye),  // normal kullanıcı (öğrenci) görünümüne geçme butonu
+            icon: Icon(Icons.school_rounded),  // normal kullanıcı (öğrenci) görünümüne geçme butonu
             tooltip: "Öğrenci Görünümüne Geç",
             onPressed: () {
               Navigator.pushNamed(context, '/home'); 
             },
           ),
           IconButton(
-            icon: Icon(Icons.map), // harita butonu
+            icon: Icon(Icons.map_outlined), // harita butonu
             tooltip: "Haritaya Git", 
             onPressed: () => Navigator.pushNamed(context, '/map')
           ),
           IconButton(
-            icon: Icon(Icons.person), // profil butonu
+            icon: Icon(Icons.account_circle_rounded), // profil butonu
             tooltip: "Profil",
             onPressed: () => Navigator.pushNamed(context, '/profile'),
           ),
@@ -309,7 +309,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                         leading: CircleAvatar(
                           backgroundColor: statusColor,
                           child: Icon(
-                            incident.status == 'Çözüldü' ? Icons.check : Icons.warning_amber_rounded,
+                            incident.status == 'Çözüldü' ? Icons.verified_rounded : Icons.report_problem_rounded,
                             color: Colors.white
                           ),
                         ),
@@ -325,17 +325,17 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             IconButton(
-                              icon: Icon(Icons.description, color: Colors.purple),
+                              icon: Icon(Icons.edit_note_rounded, color: Colors.purple),
                               tooltip: "Açıklamayı Düzenle",
                               onPressed: () => _editDescription(incident.id, incident.description),
                             ),
                             IconButton(
-                              icon: Icon(Icons.edit, color: Colors.blue),
+                              icon: Icon(Icons.published_with_changes_rounded, color: Colors.blue),
                               tooltip: "Durumu Güncelle",
                               onPressed: () => _updateStatus(incident.id, incident.status, incident.title),
                             ),
                             IconButton(
-                              icon: Icon(Icons.delete, color: Colors.red),
+                              icon: Icon(Icons.delete_forever_rounded, color: Colors.red),
                               tooltip: "Bildirimi Sil",
                               onPressed: () => _deleteIncident(incident.id),
                             ),

@@ -61,7 +61,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Şifremi Unuttum")),
+      appBar: AppBar(
+        title: Row(
+          children: const [
+            Icon(Icons.lock_reset_rounded),
+            SizedBox(width: 8),
+            Text("Şifremi Unuttum"),
+          ],
+        ),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -82,7 +90,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 decoration: const InputDecoration(
                   labelText: "E-posta",
                   border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.email),
+                  prefixIcon: Icon(Icons.alternate_email_rounded),
                 ),
                 validator: (v) {
                   final s = (v ?? "").trim();
@@ -97,9 +105,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               SizedBox(
                 width: double.infinity,
                 height: 48,
-                child: ElevatedButton(
+                child: ElevatedButton.icon(
                   onPressed: _loading ? null : _sendResetMail,
-                  child: _loading
+                  icon: _loading
+                      ? const Icon(Icons.mark_email_read_rounded)
+                      : const Icon(Icons.send_rounded),
+                  label: _loading
                       ? const SizedBox(
                           width: 22,
                           height: 22,

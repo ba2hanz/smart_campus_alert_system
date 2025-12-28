@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/incident_model.dart';
+//hem userr(öğrenci) hem admin için ana ekran
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -11,15 +12,15 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  String _filter = "Tümü";
-  String _searchQuery = "";
-  List<String> _followedIds = [];
+  String _filter = "Tümü";  //hangi olayların gösterileceği filtresi
+  String _searchQuery = "";  //arama çubuğuna yazılan metin
+  List<String> _followedIds = []; // kullanıcının takip ettiği olay ID'leri
   bool _isAdmin = false; // Admin mi kontrolü için
 
   @override
   void initState() {
     super.initState();
-    _getFollowedIncidents(); // Takip edilen olayları yükle
+    _getFollowedIncidents(); // Takip edilen olayları yükle veritabanından
     _checkIfAdmin(); // Rol kontrolü
   }
 
@@ -48,13 +49,15 @@ class _HomeScreenState extends State<HomeScreen> {
     if (user != null) {
       var doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
       if (doc.exists) {
+        final data = doc.data() as Map<String, dynamic>?;
         setState(() {
-          _followedIds = List<String>.from(doc.get('followedIncidents') ?? []);
+          _followedIds = List<String>.from(data?['followedIncidents'] ?? []);
         });
       }
     }
   }
 
+  // ana ekran yapısındaki butonlar arama filtreleme listeleme gibi işlemler
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -69,7 +72,7 @@ class _HomeScreenState extends State<HomeScreen> {
               Navigator.pushNamed(context, '/map');
             },
           ),
-          // PROFİL BUTONU 
+          // PROFİL BUTONU
           IconButton(
             icon: Icon(Icons.person),
             tooltip: "Profil ve Ayarlar",
@@ -86,14 +89,15 @@ class _HomeScreenState extends State<HomeScreen> {
             padding: EdgeInsets.all(8.0),
             child: TextField(
               decoration: InputDecoration(
-                  hintText: "Bildirim ara...",
-                  prefixIcon: Icon(Icons.search),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
-                  contentPadding: EdgeInsets.symmetric(vertical: 0, horizontal: 10)),
+                hintText: "Bildirim arama...",
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
+                contentPadding: EdgeInsets.symmetric(vertical: 0, horizontal: 10),
+              ),
               onChanged: (val) => setState(() => _searchQuery = val.toLowerCase()),
             ),
           ),
-          
+
           // FİLTRELER
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -111,21 +115,32 @@ class _HomeScreenState extends State<HomeScreen> {
           // LİSTE
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance.collection('incidents').orderBy('createdAt', descending: true).snapshots(),
+              stream: FirebaseFirestore.instance  //kronolojik olarak bildirileri çeker
+                  .collection('incidents')
+                  .orderBy('createdAt', descending: true)
+                  .snapshots(),
               builder: (context, snapshot) {
-                if (!snapshot.hasData) return Center(child: CircularProgressIndicator());
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError) {
+                  return Center(child: Text("Hata: ${snapshot.error}"));
+                }
+                if (!snapshot.hasData) {
+                  return Center(child: Text("Veri yok"));
+                }
 
                 var docs = snapshot.data!.docs.where((doc) {
                   var data = doc.data() as Map<String, dynamic>;
                   String status = data['status'] ?? '';
 
-                  // İnceleniyor olanlar asla görünmesin
+                  // İnceleniyor olanları her zaman gizlensin
                   if (status == 'İnceleniyor' || status == 'Inceleniyor') return false;
 
-                  // Başlıkta aranan kelime var mı?
+                  // Arama metni ile eşleşiyor mu
                   bool matchesSearch = data['title'].toString().toLowerCase().contains(_searchQuery);
-                  
-                  // Seçilen filtreye uyuyor mu?
+
+                  // Filtreye göre eşleşiyor mu
                   bool matchesFilter = true;
                   if (_filter == "Acik") matchesFilter = status == "Acik" || status == "Açık";
                   if (_filter == "Takip") matchesFilter = _followedIds.contains(doc.id);
@@ -140,12 +155,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   itemBuilder: (context, index) {
                     var data = docs[index].data() as Map<String, dynamic>;
                     var incident = Incident.fromMap(data, docs[index].id);
-                    
+
                     return Card(
                       margin: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       child: ListTile(
                         leading: CircleAvatar(
-                          backgroundColor: incident.status == 'Çözüldü' || incident.status == 'Cozuldu' ? Colors.green : Colors.red,
+                          backgroundColor: incident.status == 'Çözüldü' || incident.status == 'Cozuldu'
+                              ? Colors.green
+                              : Colors.red,
                           child: Icon(Icons.info_outline, color: Colors.white),
                         ),
                         title: Text(incident.title, style: TextStyle(fontWeight: FontWeight.bold)),
@@ -153,7 +170,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         trailing: Icon(Icons.arrow_forward_ios, size: 16),
                         onTap: () {
                           // Detay sayfasına gidip gelince takip listesini güncelle
-                          Navigator.pushNamed(context, '/detail', arguments: incident).then((_) => _getFollowedIncidents());
+                          Navigator.pushNamed(context, '/detail', arguments: incident)
+                              .then((_) => _getFollowedIncidents());
                         },
                       ),
                     );
@@ -164,15 +182,15 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      
-      // --- DİNAMİK BUTON ---
+
+      // DİNAMİK BUTON
       floatingActionButton: _isAdmin
           ? Row(
-              mainAxisAlignment: MainAxisAlignment.end, 
+              mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                //ADMİNE DÖN (Sadece Admin görür)
+                //ADMİNE DÖN Sadece Adminler görür :)        
                 Padding(
-                  padding: const EdgeInsets.only(left: 30.0), 
+                  padding: const EdgeInsets.only(left: 30.0),
                   child: FloatingActionButton.extended(
                     heroTag: "btnAdminReturn", // Çakışmayı önlemek için özel etiket
                     onPressed: () {
@@ -183,8 +201,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     label: Text("ADMİNE DÖN", style: TextStyle(color: Colors.white)),
                   ),
                 ),
-                
-                SizedBox(width: 10), 
+
+                SizedBox(width: 10),
 
                 FloatingActionButton(
                   heroTag: "btnAddIncident", // Çakışmayı önlemek için özel etiket
@@ -197,7 +215,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             )
           : FloatingActionButton(
-              // NORMAL ÖĞRENCİ SADECE BUNU GÖRÜR
+              // normal kullanıcı için tek buton
               heroTag: "btnStudentAdd",
               child: Icon(Icons.add),
               tooltip: "Yeni Bildirim Oluştur",

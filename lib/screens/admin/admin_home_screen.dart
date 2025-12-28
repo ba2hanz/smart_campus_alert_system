@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:googleapis_auth/auth_io.dart'; 
+import 'package:googleapis_auth/auth_io.dart'; // google api yetkilendirme için 
 import 'package:smart_campus_alert_system/models/incident_model.dart'; 
 
 class AdminHomeScreen extends StatefulWidget {
@@ -11,7 +11,7 @@ class AdminHomeScreen extends StatefulWidget {
 }
 
 class _AdminHomeScreenState extends State<AdminHomeScreen> {
-  String _filter = "Tümü";
+  String _filter = "Tümü";  // hangi duruma göre filtreleme yapılacak
 
   //BİLDİRİM GÖNDERME 
   // topic parametresi varsayılan olarak 'all' (herkes) alır.
@@ -67,7 +67,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     }
   }
 
-  // ACİL DURUM DUYURUSU (Admin Butona Basınca)
+  // ACİL DURUM DUYURUSU admin sağ üstteki megafon ikonuna bastığında açılan pencer
   void _showNotificationDialog() {
     TextEditingController titleController = TextEditingController();
     TextEditingController bodyController = TextEditingController();
@@ -90,7 +90,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: Text("İptal")),
-          ElevatedButton(
+          ElevatedButton( // butona basıldığında _sendPushNotification çağrılır ve topic 'all' olarak kalır herkese bildirim gider
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
             onPressed: () {
               if (titleController.text.isNotEmpty && bodyController.text.isNotEmpty) {
@@ -108,6 +108,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   
   // OTOMATİK BİLDİRİM (Durum Değişince)
   // incidentTitle parametresi eklendi ki mesajda olay adı yazsın
+  // admin olayın durumunu güncellemek istediğinde bu metot çağrılır
   void _updateStatus(String docId, String currentStatus, String incidentTitle) {
     showDialog(
       context: context,
@@ -115,7 +116,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         String selectedStatus = currentStatus;
         return AlertDialog(
           title: Text("Durumu Güncelle"),
-          content: DropdownButtonFormField<String>(
+          content: DropdownButtonFormField<String>( //açılır menü oluşturma açık,inceleniyor çözüldü
             value: ["Açık", "İnceleniyor", "Çözüldü"].contains(currentStatus) ? currentStatus : "İnceleniyor",
             items: ["İnceleniyor", "Açık", "Çözüldü"].map((status) {
               return DropdownMenuItem(value: status, child: Text(status));
@@ -129,13 +130,13 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             ElevatedButton(
               onPressed: () async {
                 // Veritabanını Güncelle
-                await FirebaseFirestore.instance.collection('incidents').doc(docId).update({
+                await FirebaseFirestore.instance.collection('incidents').doc(docId).update({ //
                   'status': selectedStatus
                 });
 
                 // OTOMATİK BİLDİRİM TETİKLE
                 // Sadece bu olayın ID'sine abone olanlara gider
-                await _sendPushNotification(
+                await _sendPushNotification(   // burda herkese gitmiyo sadece bu olayın takipçilerine gidiyo
                   "Durum Güncellemesi", 
                   "'$incidentTitle' olayının durumu '$selectedStatus' olarak değiştirildi.",
                   topic: "incident_$docId" 
@@ -151,7 +152,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       },
     );
   }
-
+//olay silme 
   void _deleteIncident(String docId) {
     showDialog(
       context: context,
@@ -173,11 +174,11 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       ),
     );
   }
-
+// uı kısmı
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppBar(  // üst bar
         title: Text("Yönetici Paneli"),
         backgroundColor: Colors.redAccent,
         leading: IconButton(
@@ -187,19 +188,19 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         ),
         actions: [
           IconButton(
-            icon: Icon(Icons.remove_red_eye), 
+            icon: Icon(Icons.remove_red_eye),  // normal kullanıcı (öğrenci) görünümüne geçme butonu
             tooltip: "Öğrenci Görünümüne Geç",
             onPressed: () {
               Navigator.pushNamed(context, '/home'); 
             },
           ),
           IconButton(
-            icon: Icon(Icons.map),
+            icon: Icon(Icons.map), // harita butonu
             tooltip: "Haritaya Git", 
             onPressed: () => Navigator.pushNamed(context, '/map')
           ),
           IconButton(
-            icon: Icon(Icons.person),
+            icon: Icon(Icons.person), // profil butonu
             tooltip: "Profil",
             onPressed: () => Navigator.pushNamed(context, '/profile'),
           ),
@@ -212,7 +213,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             scrollDirection: Axis.horizontal,
             padding: EdgeInsets.all(10),
             child: Row(
-              children: ["Tümü", "İnceleniyor", "Açık", "Çözüldü"].map((status) {
+              children: ["Tümü", "İnceleniyor", "Açık", "Çözüldü"].map((status) {  //burası filtre seçeneklerinin listesi
                 return Padding(
                   padding: EdgeInsets.symmetric(horizontal: 4),
                   child: ChoiceChip(
@@ -236,8 +237,8 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             ),
           ),
         
-          Expanded(
-            child: StreamBuilder<QuerySnapshot>(
+          Expanded(  // olayların listelendiği kısım
+            child: StreamBuilder<QuerySnapshot>(  //StreamBuilder kullanarak Firestore'dan gerçek zamanlı veri çekme
               stream: FirebaseFirestore.instance.collection('incidents').orderBy('createdAt', descending: true).snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) return Center(child: CircularProgressIndicator());
@@ -246,7 +247,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                    return Center(child: Text("Hiç bildirim yok."));
                 }
 
-                var docs = snapshot.data!.docs.where((doc) {
+                var docs = snapshot.data!.docs.where((doc) {  //veritabanından gelen tüm veriler, kullanıcının seçtiği filtreye göre elenir.
                   var data = doc.data() as Map<String, dynamic>;
                   if (_filter == "Tümü") return true;
                   return data['status'] == _filter;
@@ -254,18 +255,18 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
                 if (docs.isEmpty) return Center(child: Text("Bu kategoride bildirim yok."));
 
-                return ListView.builder(
+                return ListView.builder(  // olayları listeleme
                   itemCount: docs.length,
                   itemBuilder: (context, index) {
                     var data = docs[index].data() as Map<String, dynamic>;
                     var incident = Incident.fromMap(data, docs[index].id);
 
-                    Color statusColor = Colors.grey;
+                    Color statusColor = Colors.grey;   //bıton durumuna göre renk belirleme
                     if (incident.status == 'İnceleniyor') statusColor = Colors.orange;
                     if (incident.status == 'Açık') statusColor = Colors.red;
                     if (incident.status == 'Çözüldü') statusColor = Colors.green;
 
-                    return Card(
+                    return Card(   //icon ve butonların gösterildiği kısım
                       elevation: 3,
                       margin: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       child: ListTile(

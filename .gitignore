@@ -45,25 +45,28 @@ app.*.map.json
 /android/app/release
 
 # ==========================================
-# --- GÜVENLİK VE GİZLİLİK (EKLEMEN GEREKENLER) ---
+# --- GÜVENLİK VE GİZLİLİK ---
 # ==========================================
 
-# 1. Firebase Konfigürasyon Dosyaları (Android & iOS)
+# Çevresel Değişkenler (API key ve secret değerler burada)
+.env
+
+# Firebase Konfigürasyon Dosyaları (Android & iOS)
 android/app/google-services.json
 ios/Runner/GoogleService-Info.plist
 
-# 2. Admin Yetki Dosyası (ÇOK ÖNEMLİ)
+# Firebase Options (env değişkenleri ile çalışır, gizli bilgi içermez ama yine de güvende olsun)
+lib/firebase_options.dart
+
+# Admin Yetki Dosyası
 assets/service_account.json
 
-# 3. Eğer credentials.dart yöntemini kullandıysan
+# Eğer credentials.dart yöntemini kullandıysan
 lib/credentials.dart
 
-# 4. Android İmzalama ve Yerel Ayarlar
+# Android İmzalama ve Yerel Ayarlar
 android/key.properties
 android/local.properties
 
-# 5. Çevresel Değişkenler (Kullanıyorsan)
-.env
-
-# 6. Mac Sistem Dosyaları
+# Mac Sistem Dosyaları
 .DS_Store

@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show rootBundle;
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:googleapis_auth/auth_io.dart'; // google api yetkilendirme için 
+import 'package:googleapis_auth/auth_io.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:smart_campus_alert_system/models/incident_model.dart'; 
 
 class AdminHomeScreen extends StatefulWidget {
@@ -18,15 +18,24 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   // Ama durum güncellemesi yaparken buraya 'incident_ID' göndereceğiz.
   Future<void> _sendPushNotification(String title, String body, {String topic = 'all'}) async {
     try {
-      // Service Account dosyasını assets klasöründen oku
-      final jsonString = await rootBundle.loadString('assets/service_account.json');
-      final serviceAccount = ServiceAccountCredentials.fromJson(jsonDecode(jsonString));
+      final serviceAccountJson = {
+        'type': dotenv.env['FIREBASE_SA_TYPE'],
+        'project_id': dotenv.env['FIREBASE_SA_PROJECT_ID'],
+        'private_key_id': dotenv.env['FIREBASE_SA_PRIVATE_KEY_ID'],
+        'private_key': dotenv.env['FIREBASE_SA_PRIVATE_KEY']!.replaceAll('\\n', '\n'),
+        'client_email': dotenv.env['FIREBASE_SA_CLIENT_EMAIL'],
+        'client_id': dotenv.env['FIREBASE_SA_CLIENT_ID'],
+        'auth_uri': dotenv.env['FIREBASE_SA_AUTH_URI'],
+        'token_uri': dotenv.env['FIREBASE_SA_TOKEN_URI'],
+        'auth_provider_x509_cert_url': dotenv.env['FIREBASE_SA_AUTH_PROVIDER_CERT_URL'],
+        'client_x509_cert_url': dotenv.env['FIREBASE_SA_CLIENT_CERT_URL'],
+      };
+      final serviceAccount = ServiceAccountCredentials.fromJson(serviceAccountJson);
 
-      // Google'dan yetki iste
       final scopes = ['https://www.googleapis.com/auth/firebase.messaging'];
       final client = await clientViaServiceAccount(serviceAccount, scopes);
 
-      final projectId = 'smartcampusalertsystem';
+      final projectId = dotenv.env['FIREBASE_PROJECT_ID']!;
 
       // HTTP v1 API'ye İstek At
       final response = await client.post(

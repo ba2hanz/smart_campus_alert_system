@@ -41,7 +41,9 @@
 * **Flutter & Dart:** UI ve logic geliştirme.
 * **Firebase Authentication:** Kullanıcı girişi ve rol yönetimi (Admin/User).
 * **Cloud Firestore:** Gerçek zamanlı veritabanı.
-* **Firebase Cloud Messaging (FCM):** Push bildirimleri (HTTP v1 API).
+* **Firebase Cloud Messaging (FCM):** Push bildirimleri, konu (topic) abonelikleriyle.
+* **Cloud Functions:** Bildirimleri sunucuda gönderir — durum değişince takipçilere, duyuru yazılınca tüm kampüse (`functions/`).
+* **Firestore & Storage Güvenlik Kuralları:** Rol ve görünürlük kararları sunucuda (`firestore.rules`, `storage.rules`).
 * **Google Maps Flutter:** Harita entegrasyonu.
 * **Provider / StreamBuilder:** State yönetimi.
 
@@ -65,14 +67,23 @@ Projeyi yerel ortamınızda çalıştırmak için aşağıdaki adımları izleyi
     * `google-services.json` dosyasını indirip `android/app/` klasörüne atın.
     * Authentication (Email/Password) ve Firestore veritabanını aktif edin.
 
-4.  **Admin Bildirim Yetkisi (Önemli):**
-    * Firebase Console -> Project Settings -> Service Accounts sekmesinden yeni bir `private key` oluşturun.
-    * İnen dosyanın adını `service_account.json` olarak değiştirin.
-    * Bu dosyayı projenin `assets/` klasörüne ekleyin.
+4.  **Güvenlik Kuralları ve Bildirim Fonksiyonları (Önemli):**
+    * Uygulamaya **service account anahtarı konmaz.** Uygulamanın içindeki her dosya (`.env` dahil) APK'yı açan herkes tarafından okunabilir; push bildirimlerini Cloud Functions gönderir.
+    * Firebase CLI ile giriş yapın: `npm install -g firebase-tools` → `firebase login`
+    * Kuralları ve indeksi yükleyin:
+      ```bash
+      firebase deploy --only firestore,storage --project smartcampusalertsystem
+      ```
+    * Bildirim fonksiyonlarını yükleyin (Firebase **Blaze** planı gerekir; ücretsiz kotası bu proje için yeterli):
+      ```bash
+      firebase deploy --only functions --project smartcampusalertsystem
+      ```
+      Fonksiyonların bölgesi Firestore veritabanınızınkiyle aynı olmalı: `functions/src/index.ts` → `REGION`.
 
 5.  **Google Maps API:**
     * Google Cloud Console'dan bir API Key alın.
-    * `android/app/src/main/AndroidManifest.xml` dosyasına ekleyin.
+    * `android/local.properties` dosyasına `MAPS_API_KEY=...` olarak yazın; `AndroidManifest.xml` anahtarı oradan okur.
+    * Bu anahtar APK'nın içinde durur, gizlenemez. Bu yüzden Google Cloud Console'da **kısıtlayın**: Android uygulaması (paket adı + SHA-1) ve yalnızca *Maps SDK for Android*.
 
 6.  **Çalıştırın:**
     ```bash
@@ -84,6 +95,25 @@ Varsayılan olarak yeni kayıt olan herkes **User** rolündedir. Bir kullanıcı
 1.  Firebase Console -> Firestore Database'e gidin.
 2.  `users` koleksiyonunu bulun.
 3.  İlgili kullanıcının dökümanındaki `role` alanını `admin` olarak güncelleyin.
+
+## 🛡️ Güvenlik
+
+Ekranlardaki filtreler yalnızca görüntüdür; asıl kararlar Firebase kurallarında:
+
+* **"İnceleniyor" bildirimler** yalnızca adminlere ve bildirimi yapan kişiye açık. Kurallar filtre olmadığı için admin olmayanların sorguları durumu açıkça süzer (`publicIncidentStatuses`, `lib/models/incident_model.dart`).
+* **Roller:** Kullanıcı kayıtta yalnızca `user` rolü alır ve kendi rolünü değiştiremez; rolü yalnızca adminler değiştirir.
+* **Bildirimler:** Yeni bildirim her zaman `İnceleniyor` olarak, bildirenin kendi adına açılır. Durum değiştirme, düzenleme ve silme yalnızca adminlerin işidir.
+* **Duyurular:** Admin `announcements` koleksiyonuna yazar, Cloud Function tüm kampüse gönderir.
+* **Fotoğraflar:** Yalnızca giriş yapmış kullanıcılar, 10 MB'a kadar görsel yükleyebilir; var olan bir fotoğrafın üstüne yazılamaz.
+
+Kurallar emülatörde test edilir (Java gerekir; gerçek projeye istek gitmez):
+
+```bash
+cd functions
+npm install
+npm test         # bildirim mesajları
+npm run rules    # Firestore ve Storage kuralları, emülatörde
+```
 
 ## 🤝 Katkıda Bulunma
 1.  Bu repoyu fork edin.

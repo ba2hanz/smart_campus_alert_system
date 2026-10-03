@@ -117,6 +117,8 @@ class _HomeScreenState extends State<HomeScreen> {
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance  //kronolojik olarak bildirileri çeker
                   .collection('incidents')
+                  // İnceleniyor olanlar sunucuda süzülür; kurallar onları zaten vermez
+                  .where('status', whereIn: publicIncidentStatuses)
                   .orderBy('createdAt', descending: true)
                   .snapshots(),
               builder: (context, snapshot) {
@@ -133,9 +135,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 var docs = snapshot.data!.docs.where((doc) {
                   var data = doc.data() as Map<String, dynamic>;
                   String status = data['status'] ?? '';
-
-                  // İnceleniyor olanları her zaman gizlensin
-                  if (status == 'İnceleniyor' || status == 'Inceleniyor') return false;
 
                   // Arama metni ile eşleşiyor mu
                   bool matchesSearch = data['title'].toString().toLowerCase().contains(_searchQuery);

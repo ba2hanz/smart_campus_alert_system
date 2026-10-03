@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -22,7 +23,8 @@ class _MapScreenState extends State<MapScreen> {
   
   // Verileri hafızada tutacağız ki mod değiştirince tekrar internetten çekmesin
   List<QueryDocumentSnapshot> _currentDocs = [];
-  
+  StreamSubscription<QuerySnapshot>? _incidentsSubscription;
+
   bool _isAdmin = false; 
   bool _colorByStatus = false; // FALSE: Türe göre renk, TRUE: Duruma göre renk
 
@@ -48,18 +50,30 @@ class _MapScreenState extends State<MapScreen> {
         }
       }
     }
-    _listenToIncidents(); // Olayları dinlemeye başla
+    if (mounted) _listenToIncidents(); // Olayları dinlemeye başla
   }
 
   // OLAYLARI DİNLE (REALTIME)
   // Firestore'dan gelen her güncellemede markerları yeniden çizer
   void _listenToIncidents() {
-    FirebaseFirestore.instance.collection('incidents').snapshots().listen((snapshot) {
+    Query<Map<String, dynamic>> query = FirebaseFirestore.instance.collection('incidents');
+    // Admin olmayanlar onay bekleyen bildirimleri okuyamaz (firestore.rules);
+    // sorgu bunu açıkça süzmezse Firestore sorgunun tamamını reddeder.
+    if (!_isAdmin) {
+      query = query.where('status', whereIn: publicIncidentStatuses);
+    }
+    _incidentsSubscription = query.snapshots().listen((snapshot) {
       // Gelen veriyi hafızaya al
       _currentDocs = snapshot.docs;
       // Markerları oluştur
       _updateMarkers();
     });
+  }
+
+  @override
+  void dispose() {
+    _incidentsSubscription?.cancel(); // sayfa kapanınca dinlemeyi bırak
+    super.dispose();
   }
 
   // Markerları o anki moda göre oluşturan fonksiyon
@@ -73,14 +87,7 @@ class _MapScreenState extends State<MapScreen> {
 
       var incident = Incident.fromMap(data, doc.id);
 
-      // --- GÜVENLİK FİLTRESİ ---
-      if (!_isAdmin) {
-        if (incident.status == 'İnceleniyor' || 
-            incident.status == 'Inceleniyor' || 
-            incident.status == 'Beklemede') {
-          continue;
-        }
-      }
+      // Onay bekleyenler admin olmayanlara hiç gelmez: sorgu ve kurallar süzüyor.
 
       // --- RENK SEÇİMİ (MODA GÖRE) ---
       double markerHue;

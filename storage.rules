@@ -1,0 +1,19 @@
+rules_version = '2';
+
+// Bildirim fotoğrafları. Uygulama her fotoğrafı incident_images/<zaman>.jpg
+// olarak yükler (create_incident_screen.dart); başka bir yol kullanılmıyor,
+// kural yazılmayan her yol kapalı.
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /incident_images/{fileName} {
+      allow read: if request.auth != null;
+      // Var olan bir dosyaya yükleme de 'create' sayılır; resource == null
+      // olmasa biri başka bir bildirimin fotoğrafını değiştirebilirdi.
+      allow create: if request.auth != null
+        && resource == null
+        && request.resource.size < 10 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+      allow update, delete: if false;
+    }
+  }
+}

@@ -205,7 +205,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (ids.isEmpty) return SizedBox.shrink();
 
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance.collection('incidents').snapshots(),
+      // Takip edilebilenler zaten herkese açık olanlar; süzgeçsiz sorguyu kurallar reddeder
+      stream: FirebaseFirestore.instance
+          .collection('incidents')
+          .where('status', whereIn: publicIncidentStatuses)
+          .snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) return Center(child: CircularProgressIndicator());
 

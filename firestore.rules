@@ -1,0 +1,96 @@
+rules_version = '2';
+
+// Smart Campus Alert — Firestore güvenlik kuralları.
+//
+// Gizlilik kararları burada uygulanır; ekranlardaki filtreler yalnızca
+// görüntüdür. Kurallar filtre DEĞİLDİR: bir sorgu, izin verilmeyen tek bir
+// belge döndürebilecekse Firestore sorgunun tamamını reddeder. Bu yüzden admin
+// olmayanların olay sorguları durumu açıkça süzer (publicIncidentStatuses,
+// lib/models/incident_model.dart).
+//
+// Testler: functions/test/rules.test.ts  (cd functions && npm run rules)
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Herkesin görebileceği durumlar. 'İnceleniyor' (onay bekleyen) bunlardan
+    // biri değil. 'Acik' / 'Cozuldu' eski kayıtlardaki yazımlar.
+    // lib/models/incident_model.dart → publicIncidentStatuses ile aynı kalmalı.
+    function publicStatuses() {
+      return ['Açık', 'Acik', 'Çözüldü', 'Cozuldu'];
+    }
+
+    function incidentTypes() {
+      return ['Genel', 'Guvenlik', 'Saglik', 'Teknik', 'Cevre', 'Kayip-Buluntu'];
+    }
+
+    function isText(value, maxLength) {
+      return value is string && value.size() > 0 && value.size() <= maxLength;
+    }
+
+    match /users/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
+
+      // Kayıt: herkes yalnızca kendi kaydını, yalnızca 'user' rolüyle açar.
+      allow create: if signedIn() && request.auth.uid == uid
+        && request.resource.data.role == 'user';
+
+      // Kullanıcı kendi kaydını (takip listesi, bildirim ayarları) düzenler ama
+      // rolüne dokunamaz. Rolü yalnızca adminler değiştirir.
+      allow update: if (signedIn() && request.auth.uid == uid
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'uid', 'email']))
+        || isAdmin();
+
+      allow delete: if false;
+    }
+
+    match /incidents/{incidentId} {
+      // Onay bekleyen bir bildirimi yalnızca adminler ve bildirimi yapan görür.
+      allow read: if signedIn() && (
+        resource.data.status in publicStatuses()
+        || resource.data.userId == request.auth.uid
+        || isAdmin()
+      );
+
+      // Yeni bildirim her zaman 'İnceleniyor' olarak, bildirenin kendi adına açılır.
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(
+             ['title', 'description', 'type', 'status', 'latitude', 'longitude', 'imageUrl', 'createdAt', 'userId'])
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.status == 'İnceleniyor'
+        && request.resource.data.type in incidentTypes()
+        && isText(request.resource.data.title, 200)
+        && isText(request.resource.data.description, 5000)
+        && request.resource.data.latitude is number
+        && request.resource.data.longitude is number
+        && (request.resource.data.get('imageUrl', null) == null || request.resource.data.imageUrl is string)
+        && request.resource.data.createdAt == request.time;
+
+      // Durum değiştirmek, düzenlemek ve silmek adminin işi. Durum değişince
+      // takipçilere bildirimi Cloud Function (notifyIncidentFollowers) gönderir.
+      allow update, delete: if isAdmin();
+    }
+
+    // Duyurular: admin yazar, Cloud Function (sendAnnouncement) tüm kampüse
+    // gönderir. Yazılmış bir duyuru değiştirilemez.
+    match /announcements/{announcementId} {
+      allow read: if signedIn();
+      allow create: if isAdmin()
+        && request.resource.data.keys().hasOnly(['title', 'body', 'createdBy', 'createdAt'])
+        && request.resource.data.createdBy == request.auth.uid
+        && isText(request.resource.data.title, 100)
+        && isText(request.resource.data.body, 1000)
+        && request.resource.data.createdAt == request.time;
+      allow update, delete: if false;
+    }
+  }
+}

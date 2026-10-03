@@ -1,9 +1,7 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:googleapis_auth/auth_io.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:smart_campus_alert_system/models/incident_model.dart'; 
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:smart_campus_alert_system/models/incident_model.dart';
 
 class AdminHomeScreen extends StatefulWidget {
   @override
@@ -13,66 +11,24 @@ class AdminHomeScreen extends StatefulWidget {
 class _AdminHomeScreenState extends State<AdminHomeScreen> {
   String _filter = "Tümü";  // hangi duruma göre filtreleme yapılacak
 
-  //BİLDİRİM GÖNDERME 
-  // topic parametresi varsayılan olarak 'all' (herkes) alır.
-  // Ama durum güncellemesi yaparken buraya 'incident_ID' göndereceğiz.
-  Future<void> _sendPushNotification(String title, String body, {String topic = 'all'}) async {
+  // DUYURU GÖNDERME
+  // Duyuru 'announcements' koleksiyonuna yazılır; 'all' konusuna abone herkese
+  // bildirimi Cloud Function (functions/src/index.ts → sendAnnouncement) gönderir.
+  // Uygulamada gizli anahtar tutulmaz: kimin duyuru yazabileceğine Firestore
+  // kuralları karar verir (yalnızca adminler).
+  Future<void> _sendAnnouncement(String title, String body) async {
     try {
-      final serviceAccountJson = {
-        'type': dotenv.env['FIREBASE_SA_TYPE'],
-        'project_id': dotenv.env['FIREBASE_SA_PROJECT_ID'],
-        'private_key_id': dotenv.env['FIREBASE_SA_PRIVATE_KEY_ID'],
-        'private_key': dotenv.env['FIREBASE_SA_PRIVATE_KEY']!.replaceAll('\\n', '\n'),
-        'client_email': dotenv.env['FIREBASE_SA_CLIENT_EMAIL'],
-        'client_id': dotenv.env['FIREBASE_SA_CLIENT_ID'],
-        'auth_uri': dotenv.env['FIREBASE_SA_AUTH_URI'],
-        'token_uri': dotenv.env['FIREBASE_SA_TOKEN_URI'],
-        'auth_provider_x509_cert_url': dotenv.env['FIREBASE_SA_AUTH_PROVIDER_CERT_URL'],
-        'client_x509_cert_url': dotenv.env['FIREBASE_SA_CLIENT_CERT_URL'],
-      };
-      final serviceAccount = ServiceAccountCredentials.fromJson(serviceAccountJson);
-
-      final scopes = ['https://www.googleapis.com/auth/firebase.messaging'];
-      final client = await clientViaServiceAccount(serviceAccount, scopes);
-
-      final projectId = dotenv.env['FIREBASE_PROJECT_ID']!;
-
-      // HTTP v1 API'ye İstek At
-      final response = await client.post(
-        Uri.parse('https://fcm.googleapis.com/v1/projects/$projectId/messages:send'),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'message': {
-            'topic': topic, 
-            'notification': {
-              'title': title,
-              'body': body,
-            },
-            'data': {
-              'click_action': 'FLUTTER_NOTIFICATION_CLICK',
-              'status': 'urgent' 
-            }
-          }
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        // Sadece admin manuel gönderdiyse ekranda bilgi ver, otomatikse sessiz kalabilir
-        if (topic == 'all') {
-           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Duyuru başarıyla gönderildi!")));
-        }
-      } else {
-        print("Hata Detayı: ${response.body}");
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Gönderilemedi. Hata: ${response.statusCode}")));
-      }
-      
-      client.close();
-
+      await FirebaseFirestore.instance.collection('announcements').add({
+        'title': title,
+        'body': body,
+        'createdBy': FirebaseAuth.instance.currentUser?.uid,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Duyuru gönderildi!")));
     } catch (e) {
-      print("Bildirim Hatası: $e");
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Hata: JSON dosyası okunamadı.")));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Duyuru gönderilemedi: $e")));
     }
   }
 
@@ -99,12 +55,11 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: Text("İptal")),
-          ElevatedButton( // butona basıldığında _sendPushNotification çağrılır ve topic 'all' olarak kalır herkese bildirim gider
+          ElevatedButton( // butona basıldığında duyuru kaydedilir, bildirimi sunucu herkese gönderir
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
             onPressed: () {
-              if (titleController.text.isNotEmpty && bodyController.text.isNotEmpty) {
-                // varsayılan olarak 'all' (herkes) gidecek
-                _sendPushNotification(titleController.text, bodyController.text);
+              if (titleController.text.trim().isNotEmpty && bodyController.text.trim().isNotEmpty) {
+                _sendAnnouncement(titleController.text.trim(), bodyController.text.trim());
                 Navigator.pop(context);
               }
             },
@@ -115,10 +70,11 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     );
   }
   
-  // OTOMATİK BİLDİRİM (Durum Değişince)
-  // incidentTitle parametresi eklendi ki mesajda olay adı yazsın
-  // admin olayın durumunu güncellemek istediğinde bu metot çağrılır
-  void _updateStatus(String docId, String currentStatus, String incidentTitle) {
+  // DURUM GÜNCELLEME
+  // admin olayın durumunu güncellemek istediğinde bu metot çağrılır. Takipçilere
+  // bildirimi Cloud Function (notifyIncidentFollowers) gönderir — durum haritadan
+  // değiştirildiğinde de.
+  void _updateStatus(String docId, String currentStatus) {
     showDialog(
       context: context,
       builder: (context) {
@@ -138,21 +94,16 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             TextButton(onPressed: () => Navigator.pop(context), child: Text("İptal")),
             ElevatedButton(
               onPressed: () async {
-                // Veritabanını Güncelle
+                // Veritabanını Güncelle — durum değiştiyse takipçilere bildirim sunucudan gider
                 await FirebaseFirestore.instance.collection('incidents').doc(docId).update({ //
                   'status': selectedStatus
                 });
 
-                // OTOMATİK BİLDİRİM TETİKLE
-                // Sadece bu olayın ID'sine abone olanlara gider
-                await _sendPushNotification(   // burda herkese gitmiyo sadece bu olayın takipçilerine gidiyo
-                  "Durum Güncellemesi", 
-                  "'$incidentTitle' olayının durumu '$selectedStatus' olarak değiştirildi.",
-                  topic: "incident_$docId" 
-                );
-
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Durum güncellendi ve takipçilere bildirildi!")));
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(
+                  selectedStatus == currentStatus
+                      ? "Durum değişmedi."
+                      : "Durum güncellendi, takipçilere bildirim gönderiliyor.")));
               },
               child: Text("Kaydet"),
             )
@@ -341,7 +292,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                             IconButton(
                               icon: Icon(Icons.published_with_changes_rounded, color: Colors.blue),
                               tooltip: "Durumu Güncelle",
-                              onPressed: () => _updateStatus(incident.id, incident.status, incident.title),
+                              onPressed: () => _updateStatus(incident.id, incident.status),
                             ),
                             IconButton(
                               icon: Icon(Icons.delete_forever_rounded, color: Colors.red),

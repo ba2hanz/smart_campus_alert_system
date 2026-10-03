@@ -1,5 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-// olayın modeli 
+
+// Herkesin görebileceği durumlar. 'İnceleniyor' (onay bekleyen) bildirimleri
+// yalnızca adminler ve bildirimi yapan görebilir — bunu Firestore kuralları
+// sağlıyor (firestore.rules). Kurallar filtre olmadığı için admin olmayanların
+// sorguları durumu bu listeyle süzmek ZORUNDA, yoksa sorgunun tamamı reddedilir.
+// firestore.rules → publicStatuses() ile aynı kalmalı. 'Acik' / 'Cozuldu' eski kayıtlardaki yazımlar.
+const List<String> publicIncidentStatuses = ['Açık', 'Acik', 'Çözüldü', 'Cozuldu'];
+
+// olayın modeli
 class Incident {
   final String id;
   final String title;

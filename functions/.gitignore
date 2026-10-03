@@ -1,0 +1,4 @@
+node_modules/
+lib/
+# Emülatör günlükleri (npm run rules)
+*-debug.log

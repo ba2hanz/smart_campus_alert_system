@@ -40,9 +40,6 @@ dependencies:
   # Harita ve Konum
   google_maps_flutter: ^2.5.3
   geolocator: ^14.0.2
-  
-  googleapis_auth: ^1.4.1
-  http: ^1.1.0
   flutter_dotenv: ^5.2.1
   # Resim Seçme
   image_picker: ^1.0.7

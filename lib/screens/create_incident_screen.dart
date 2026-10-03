@@ -93,7 +93,8 @@ class _CreateIncidentScreenState extends State<CreateIncidentScreen> {
         if (_imageFile != null) {
           String fileName = DateTime.now().millisecondsSinceEpoch.toString();
           Reference storageRef = FirebaseStorage.instance.ref().child('incident_images/$fileName.jpg');
-          UploadTask uploadTask = storageRef.putFile(_imageFile!);
+          // Storage kuralları yalnızca görsel kabul ediyor (storage.rules)
+          UploadTask uploadTask = storageRef.putFile(_imageFile!, SettableMetadata(contentType: 'image/jpeg'));
           TaskSnapshot taskSnapshot = await uploadTask;
           imageUrl = await taskSnapshot.ref.getDownloadURL();
         }
